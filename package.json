@@ -1,0 +1,12 @@
+{
+  "name": "pearphones-dev",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm start --prefix pear-backend\" \"npm start --prefix pear-frontend\"",
+    "install-all": "npm install --prefix pear-backend && npm install --prefix pear-frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
