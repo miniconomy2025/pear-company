@@ -111,7 +111,7 @@ paths:
 
   /payment-made:
     post:
-      summary: Notify that payment has been made to SumSang phones
+      summary: Notify that payment has been made to Pear phones
       requestBody:
         required: true
         content:
@@ -138,7 +138,7 @@ paths:
 
   /goods-delivered:
     post:
-      summary: Confirm delivery of bulk goods to SumSang phones
+      summary: Confirm delivery of bulk goods to Pear phones
       requestBody:
         required: true
         content:
@@ -159,7 +159,7 @@ paths:
 
   /goods-collection:
     post:
-      summary: Confirm consumer goods have been collected from SumSang phones
+      summary: Confirm consumer goods have been collected from Pear phones
       requestBody:
         required: true
         content:
