@@ -1,0 +1,78 @@
+.screen {
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.route-spacing {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  transform: scale(1.02);
+}
+
+.card-blue {
+  background-color: #e0f2ff;
+}
+
+.card-green {
+  background-color: #e0ffe0;
+}
+
+.card-yellow {
+  background-color: #fffacc;
+}
+
+.card-gray {
+  background-color: #f2f2f2;
+}
+
+.card-orange {
+  background-color: #ffe4b3;
+}
+
+.card-red {
+  background-color: #ffcccc;
+}
+
+.card-purple {
+  background-color: #e0ccff;
+}
+
+.card-pink {
+  background-color: #ffd6e0;
+}
+
+.small-heading {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.list {
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+}
