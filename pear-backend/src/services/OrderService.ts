@@ -1,5 +1,8 @@
 import type { PublicOrderRequest, PublicOrderResponse, OrderReservation } from "../types/publicApi.js";
 import pool from "../config/db.js";
+import { StockService } from "./StockService.js";
+
+const stockService = new StockService();
 
 export class OrderService {
   async createOrder(orderRequest: PublicOrderRequest): Promise<PublicOrderResponse> {
@@ -28,31 +31,14 @@ export class OrderService {
 
       let totalPrice = 0;
       for (const { phone_id, quantity } of orderRequest.items) {
-        const stockRes = await client.query<{ qty_avail: number }>(
-          `SELECT quantity_available AS qty_avail
-             FROM stock
-            WHERE phone_id = $1
-            FOR UPDATE`,
-          [phone_id]
-        );
-        if (stockRes.rowCount === 0) {
-          throw new Error(`Phone ${phone_id} not found in stock.`);
-        }
-        const avail = stockRes.rows[0].qty_avail;
-        if (avail < quantity) {
+        const isAvailable = await stockService.checkAvailability(phone_id, quantity);
+        if (!isAvailable) {
           throw new Error(
-            `Not enough stock for phone ${phone_id}: requested ${quantity}, available ${avail}.`
+            `Not enough stock for phone ${phone_id}: requested ${quantity}.`
           );
         }
 
-        await client.query(
-          `UPDATE stock
-              SET quantity_available = quantity_available - $2,
-                  quantity_reserved  = quantity_reserved  + $2,
-                  updated_at         = NOW()
-            WHERE phone_id = $1`,
-          [phone_id, quantity]
-        );
+        await stockService.reserveStock(phone_id, quantity);
 
         const priceRes = await client.query<{ price: string }>(
           `SELECT price::text 
@@ -184,16 +170,7 @@ export class OrderService {
       );
 
       for (const { phone_id, quantity } of itemsRes.rows) {
-        await client.query(
-          `
-          UPDATE stock
-             SET quantity_reserved  = quantity_reserved - $2,
-                 quantity_available = quantity_available + $2,
-                 updated_at         = NOW()
-           WHERE phone_id = $1
-          `,
-          [phone_id, quantity]
-        );
+        await stockService.releaseReservedStock(phone_id, quantity);
       }
 
       await client.query(
