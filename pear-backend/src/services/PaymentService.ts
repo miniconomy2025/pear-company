@@ -1,15 +1,7 @@
 import type { PaymentNotification } from "../types/publicApi.js"
-import type { OrderService } from "./OrderService.js"
-import type { StockService } from "./StockService.js"
 import pool from "../config/db.js";
 
 export class PaymentService {
-  /**
-   * Confirm that payment has been made for an order.
-   * @param reference the order_id to pay
-   * @param amount    the amount paid
-   * @throws Error if the order doesn't exist, isn't reserved, or the amount mismatches
-   */
   async processPayment(payment: PaymentNotification): Promise<void> {
     const client = await pool.connect();
     try {
