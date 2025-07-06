@@ -130,6 +130,12 @@ jobs:
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
+          
+          # Install unzip on EC2 instance
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            sudo apt update && sudo apt install -y unzip
+          '
+          
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./front-end-build.zip "ubuntu@$EC2_HOST:front-end-build.zip"
           
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
@@ -244,6 +250,12 @@ jobs:
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          
+          # Install unzip on EC2 instance
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            sudo apt update && sudo apt install -y unzip
+          '
+          
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./api-build.zip "ubuntu@$EC2_HOST:api-build.zip"
           
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
@@ -372,4 +384,4 @@ jobs:
 
       - name: Run Flyway Migrations
         run: |
-          docker run --rm --volume ${{ github.workspace }}/migrations:/flyway/sql:ro redgate/flyway -url="jdbc:postgresql://${{ needs.terraform.outputs.dbhost }}/pearDB" -user="${{ env.POSTGRES_USER }}" -password="${{ env.POSTGRES_PASS }}" migrate
+          docker run --rm --volume ${{ github.workspace }}/migrations:/flyway/sql:ro redgate/flyway -url="jdbc:postgresql://${{ needs.terraform.outputs.dbhost }}/peardb" -user="${{ env.POSTGRES_USER }}" -password="${{ env.POSTGRES_PASS }}" migrate
