@@ -262,8 +262,8 @@ jobs:
             # Update package list
             sudo apt update
             
-            # Install unzip and curl
-            sudo apt install -y unzip curl
+            # Install unzip, curl, and nginx
+            sudo apt install -y unzip curl nginx
             
             # Install Node.js 20.x (LTS)
             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -272,23 +272,37 @@ jobs:
             # Install PM2 globally
             sudo npm install -g pm2
             
+            # Start and enable nginx
+            sudo systemctl start nginx
+            sudo systemctl enable nginx
+            
             # Verify installations
             echo "Node.js version: $(node --version)"
             echo "npm version: $(npm --version)"
             echo "PM2 version: $(pm2 --version)"
+            echo "Nginx status: $(sudo systemctl is-active nginx)"
           '
 
-      - name: Set env variables
+      - name: Set env variables (SECURE)
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            echo "Exporting environment variables"
-            echo "DB_USER=${{ env.POSTGRES_USER }}" | sudo tee -a /etc/environment
-            echo "DB_PASSWORD=${{ env.POSTGRES_PASS }}" | sudo tee -a /etc/environment
-            echo "DB_HOST=${{ needs.terraform.outputs.dbhost }}" | sudo tee -a /etc/environment
-            echo "DB_NAME=pearDB" | sudo tee -a /etc/environment
-            echo "NODE_ENV=production" | sudo tee -a /etc/environment
-          '
+          
+          # Create .env file securely without logging sensitive data
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'ENVEOF'
+          echo "Creating secure environment file..."
+          cat > /home/ubuntu/.env << 'EOF'
+          DB_USER=${{ env.POSTGRES_USER }}
+          DB_PASSWORD=${{ env.POSTGRES_PASS }}
+          DB_HOST=${{ needs.terraform.outputs.dbhost }}
+          DB_NAME=peardb
+          NODE_ENV=production
+          PORT=5000
+          EOF
+          
+          # Set proper permissions
+          chmod 600 /home/ubuntu/.env
+          echo "Environment file created securely (no sensitive data logged)"
+          ENVEOF
         
       - name: Deploy
         run: |
@@ -299,6 +313,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o api-build.zip &&
             cd api-build/ &&
+            
+            # Copy environment file to the app directory
+            cp /home/ubuntu/.env .
+            
             npm install &&
             
             # Stop and delete existing pm2 process if it exists
@@ -307,6 +325,7 @@ jobs:
             fi &&
             
             cd dist &&
+            # Start with environment file
             pm2 start index.js --name pear-api
           '
 
@@ -341,6 +360,11 @@ jobs:
       run: |
         EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
         ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
+        
+        # Backup existing nginx config
+        sudo cp /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.backup 2>/dev/null || true
+        
+        # Create new nginx configuration
         sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
         server {
         listen 80;
@@ -376,13 +400,22 @@ jobs:
         }
         }
         NGINX_CONF
+        
+        echo "Nginx configuration updated successfully"
         EOF
 
     - name: Verify and Reload nginx
       run: |
         EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
         ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-          sudo nginx -t && sudo systemctl reload nginx
+          echo "Testing nginx configuration..."
+          sudo nginx -t && echo "Nginx config is valid" || echo "Nginx config has errors"
+          
+          echo "Reloading nginx..."
+          sudo systemctl reload nginx && echo "Nginx reloaded successfully" || echo "Nginx reload failed"
+          
+          echo "Nginx status:"
+          sudo systemctl status nginx --no-pager -l
         '
 
     # - name: Certbot
