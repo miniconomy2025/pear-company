@@ -18,9 +18,6 @@
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.7",
     "@types/pg": "^8.15.4",
-    "dotenv": "^17.0.0",
-    "express": "^5.1.0",
-    "install": "^0.13.0",
     "nodemon": "^3.1.10",
     "npm": "^11.4.2",
     "ts-node": "^10.9.2",
@@ -28,6 +25,8 @@
   },
   "dependencies": {
     "pearphones-dev": "file:..",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0"
   }
 }
