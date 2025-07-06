@@ -1,4 +1,5 @@
 name: "Deployment pipeline"
+
 env:
   AWS_REGION: af-south-1
 
@@ -18,7 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       dbhost: ${{ steps.tf_outputs.outputs.dbhost }}
-      ec2host: ${{ steps.tf_outputs.outputs.ec2host }}
+      apiec2host: ${{ steps.tf_outputs.outputs.apiec2host }}
+      webec2host: ${{ steps.tf_outputs.outputs.webec2host }}
     defaults:
       run:
         working-directory: terraform
@@ -29,14 +31,13 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::363615071302:role/github-role
+          role-to-assume: arn:aws:iam::804180393465:role/github-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Ensure S3 bucket exists for backend
         run: |
           BUCKET_NAME="pear-bucket-tf-state"
           REGION="${{ env.AWS_REGION }}"
-
           if ! aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
             echo "Bucket does not exist. Creating..."
             aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$REGION" \
@@ -62,7 +63,8 @@ jobs:
         id: tf_outputs
         run: |
           echo "dbhost=$(terraform output -raw db_host)" >> $GITHUB_OUTPUT
-          echo "ec2host=$(terraform output -raw ec2_host)" >> $GITHUB_OUTPUT
+          echo "apiec2host=$(terraform output -raw api_ec2_host)" >> $GITHUB_OUTPUT
+          echo "webec2host=$(terraform output -raw web_ec2_host)" >> $GITHUB_OUTPUT
 
   build-front-end:
     name: Build front-end
@@ -74,7 +76,7 @@ jobs:
       - name: Install required dependencies
         run: npm install
         working-directory: pear-frontend
-      
+        
       - name: Build application
         run: npm run build
         working-directory: pear-frontend
@@ -106,14 +108,14 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::363615071302:role/github-role
+          role-to-assume: arn:aws:iam::804180393465:role/github-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Get secrets from AWS Key Store
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            EC2_PRIVATE_KEY, privatekey
+            WEB_EC2_PRIVATE_KEY, webprivatekey
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -122,45 +124,45 @@ jobs:
 
       - name: Setup private key
         run: |
-          echo "${{ env.EC2_PRIVATE_KEY }}" > privatekey.pem
+          echo "${{ env.WEB_EC2_PRIVATE_KEY }}" > privatekey.pem
           chmod 0500 privatekey.pem
 
       - name: Deploy
         run: |
-          EC2_HOST=${{ needs.terraform.outputs.ec2host }}
+          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./front-end-build.zip "ubuntu@$EC2_HOST:front-end-build.zip"
           
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" ' 
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o front-end-build.zip && cd front-end-build/ &&
             npm install
           '
-
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" ' 
-          cat <<EOF > start-serve.sh
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            cat <<EOF > start-serve.sh
           #!/bin/bash
           npx serve -s build
           EOF'
 
       - name: Make script executable 
         run: |
-          EC2_HOST=${{ needs.terraform.outputs.ec2host }}
+          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            mv start-serve.sh front-end-build/ && 
+            mv start-serve.sh front-end-build/ &&
             cd front-end-build/ &&
             chmod +x start-serve.sh
           '
 
       - name: Run with pm2
         run: |
-          EC2_HOST=${{ needs.terraform.outputs.ec2host }}
+          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            cd front-end-build/ && 
+            cd front-end-build/ &&
             # Stop and delete existing pm2 process if it exists
             if pm2 list | grep -q "pear-front-end"; then
               pm2 delete pear-front-end;
-            fi && 
+            fi &&
             pm2 start ./start-serve.sh --name pear-front-end
           '
+
   build-api:
     name: Build API
     runs-on: ubuntu-latest
@@ -174,7 +176,7 @@ jobs:
       - name: Install required dependencies
         run: npm install
         working-directory: pear-backend
-      
+        
       - name: Compile Typescript to Javascript
         run: npm run build-linux
         working-directory: pear-backend
@@ -206,14 +208,14 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::363615071302:role/github-role
+          role-to-assume: arn:aws:iam::804180393465:role/github-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Get secrets from AWS Key Store
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            EC2_PRIVATE_KEY, privatekey
+            API_EC2_PRIVATE_KEY, apiprivatekey
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
 
@@ -224,28 +226,29 @@ jobs:
 
       - name: Setup private key
         run: |
-          echo "${{ env.EC2_PRIVATE_KEY }}" > privatekey.pem
+          echo "${{ env.API_EC2_PRIVATE_KEY }}" > privatekey.pem
           chmod 0500 privatekey.pem
 
       - name: Set env variables
         run: |
-              EC2_HOST=${{ needs.terraform.outputs.ec2host }}
-              ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-                echo "Exporting environment variables"
-                echo "DB_USER=${{ env.POSTGRES_USER }}" | sudo tee -a /etc/environment
-                echo "DB_PASSWORD=${{ env.POSTGRES_PASS }}" | sudo tee -a /etc/environment
-              '
-      
+          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            echo "Exporting environment variables"
+            echo "DB_USER=${{ env.POSTGRES_USER }}" | sudo tee -a /etc/environment
+            echo "DB_PASSWORD=${{ env.POSTGRES_PASS }}" | sudo tee -a /etc/environment
+            echo "DB_HOST=${{ needs.terraform.outputs.dbhost }}" | sudo tee -a /etc/environment
+            echo "DB_NAME=pearDB" | sudo tee -a /etc/environment
+            echo "NODE_ENV=production" | sudo tee -a /etc/environment
+          '
+        
       - name: Deploy
         run: |
-          EC2_HOST=${{ needs.terraform.outputs.ec2host }}
+          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./api-build.zip "ubuntu@$EC2_HOST:api-build.zip"
           
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" ' 
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o api-build.zip &&
-
             cd api-build/ &&
-
             npm install &&
             
             # Stop and delete existing pm2 process if it exists
@@ -270,24 +273,23 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
-        role-to-assume: arn:aws:iam::363615071302:role/github-role
+        role-to-assume: arn:aws:iam::804180393465:role/github-role
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Get secrets from AWS Key Store
       uses: aws-actions/aws-secretsmanager-get-secrets@v2
       with:
         secret-ids: |
-          EC2_PRIVATE_KEY, privatekey
+          API_EC2_PRIVATE_KEY, apiprivatekey
 
     - name: Setup private key
       run: |
-        echo "${{ env.EC2_PRIVATE_KEY }}" > privatekey.pem
+        echo "${{ env.API_EC2_PRIVATE_KEY }}" > privatekey.pem
         chmod 0500 privatekey.pem
 
     - name: Setup nginx proxy
       run: |
-        EC2_HOST=${{ needs.terraform.outputs.ec2host }}
-
+        EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
         ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
         sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
         server {
@@ -311,8 +313,8 @@ jobs:
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        location /api/ {
-            proxy_pass http://localhost:5000; # API
+        location /public-api/ {
+            proxy_pass http://localhost:5000/public-api/; # API
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection 'upgrade';
@@ -328,19 +330,19 @@ jobs:
 
     - name: Verify and Reload nginx
       run: |
-        EC2_HOST=${{ needs.terraform.outputs.ec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" ' 
+        EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
           sudo nginx -t && sudo systemctl reload nginx
         '
 
-    - name: Cerbot
-      run: |
-        EC2_HOST=${{ needs.terraform.outputs.ec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" ' 
-          sudo apt install certbot python3-certbot-nginx -y &&
-          sudo certbot --nginx -d bbd-grad-project.co.za -d www.bbd-grad-project.co.za --non-interactive --agree-tos --email shashin.gounden@bbd.co.za
-        '
-            
+    # - name: Certbot
+    #   run: |
+    #     EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+    #     ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+    #       sudo apt install certbot python3-certbot-nginx -y &&
+    #       sudo certbot --nginx -d bbd-grad-project.co.za -d www.bbd-grad-project.co.za --non-interactive --agree-tos --email shashin.gounden@bbd.co.za
+    #     '
+        
   flyway:
     needs:
       - terraform
@@ -358,7 +360,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::363615071302:role/github-role
+          role-to-assume: arn:aws:iam::804180393465:role/github-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Get secrets from AWS Key Store
@@ -370,4 +372,4 @@ jobs:
 
       - name: Run Flyway Migrations
         run: |
-          docker run --rm --volume ${{ github.workspace }}/migrations:/flyway/sql:ro redgate/flyway -url="jdbc:postgresql://${{ needs.terraform.outputs.dbhost }}/peardb" -user="${{ env.POSTGRES_USER }}" -password="${{ env.POSTGRES_PASS }}" migrate
+          docker run --rm --volume ${{ github.workspace }}/migrations:/flyway/sql:ro redgate/flyway -url="jdbc:postgresql://${{ needs.terraform.outputs.dbhost }}/pearDB" -user="${{ env.POSTGRES_USER }}" -password="${{ env.POSTGRES_PASS }}" migrate
