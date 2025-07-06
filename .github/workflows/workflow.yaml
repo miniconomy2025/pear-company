@@ -127,14 +127,32 @@ jobs:
           echo "${{ env.WEB_EC2_PRIVATE_KEY }}" > privatekey.pem
           chmod 0500 privatekey.pem
 
+      - name: Install Node.js and dependencies on EC2
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            # Update package list
+            sudo apt update
+            
+            # Install unzip and curl
+            sudo apt install -y unzip curl
+            
+            # Install Node.js 20.x (LTS)
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            
+            # Install PM2 globally
+            sudo npm install -g pm2
+            
+            # Verify installations
+            echo "Node.js version: $(node --version)"
+            echo "npm version: $(npm --version)"
+            echo "PM2 version: $(pm2 --version)"
+          '
+
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-          
-          # Install unzip on EC2 instance
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            sudo apt update && sudo apt install -y unzip
-          '
           
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./front-end-build.zip "ubuntu@$EC2_HOST:front-end-build.zip"
           
@@ -142,6 +160,8 @@ jobs:
             unzip -o front-end-build.zip && cd front-end-build/ &&
             npm install
           '
+          
+          # CREATE THE MISSING SCRIPT
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             cat <<EOF > start-serve.sh
           #!/bin/bash
@@ -235,6 +255,29 @@ jobs:
           echo "${{ env.API_EC2_PRIVATE_KEY }}" > privatekey.pem
           chmod 0500 privatekey.pem
 
+      - name: Install Node.js and dependencies on EC2
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            # Update package list
+            sudo apt update
+            
+            # Install unzip and curl
+            sudo apt install -y unzip curl
+            
+            # Install Node.js 20.x (LTS)
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            
+            # Install PM2 globally
+            sudo npm install -g pm2
+            
+            # Verify installations
+            echo "Node.js version: $(node --version)"
+            echo "npm version: $(npm --version)"
+            echo "PM2 version: $(pm2 --version)"
+          '
+
       - name: Set env variables
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
@@ -250,11 +293,6 @@ jobs:
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          
-          # Install unzip on EC2 instance
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            sudo apt update && sudo apt install -y unzip
-          '
           
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./api-build.zip "ubuntu@$EC2_HOST:api-build.zip"
           
