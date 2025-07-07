@@ -524,6 +524,11 @@ jobs:
             API_EC2_PRIVATE_KEY, apiprivatekey
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
+      
+      - name: Export secrets as environment variables
+        run: |
+          echo "POSTGRES_USER=${{ env.POSTGRES_USER }}" >> $GITHUB_ENV
+          echo "POSTGRES_PASS=${{ env.POSTGRES_PASS }}" >> $GITHUB_ENV
 
       - name: Setup private key
         run: |
@@ -546,8 +551,8 @@ jobs:
             --volume ${{ github.workspace }}/migrations:/flyway/sql:ro \
             redgate/flyway \
             -url="jdbc:postgresql://$DB_HOST_ONLY:5432/peardb" \
-            -user="${{ secrets.postgresuser }}" \
-            -password="${{ secrets.postgrespass }}" \
+            -user="${{ env.POSTGRES_USER }}" \
+            -password="${{ env.POSTGRES_PASS }}" \
             migrate
 
 
