@@ -562,15 +562,33 @@ jobs:
               sudo apt install -y postgresql-client-16
             fi
             
-            # Test database connection first (extract hostname without port)
+            # Test database connection first (handle hostname properly)
             echo "Testing database connection..."
-            DB_HOST_ONLY=$(echo "$DB_HOST" | cut -d':' -f1)
-            echo "Connecting to host: $DB_HOST_ONLY"
+            echo "Original DB_HOST: '$DB_HOST'"
+
+            # Remove port if present, otherwise use as-is
+            if [[ "$DB_HOST" == *":"* ]]; then
+              DB_HOST_ONLY="${DB_HOST%:*}"
+            else
+              DB_HOST_ONLY="$DB_HOST"
+            fi
+
+            echo "Extracted hostname: '$DB_HOST_ONLY'"
+
+            # Verify hostname is not empty
+            if [ -z "$DB_HOST_ONLY" ]; then
+              echo "Hostname extraction failed - empty hostname!"
+              echo "Original: '$DB_HOST'"
+              exit 1
+            fi
+
             PGPASSWORD="$DB_PASS" psql -h "$DB_HOST_ONLY" -p 5432 -U "$DB_USER" -d peardb -c "SELECT version();" || {
               echo "Database connection test failed!"
-              echo "Host: $DB_HOST_ONLY"
-              echo "User: $DB_USER"
+              echo "Host: '$DB_HOST_ONLY'"
+              echo "User: '$DB_USER'"
               echo "Database: peardb"
+              echo "Attempting to resolve hostname..."
+              nslookup "$DB_HOST_ONLY" || echo "DNS resolution failed"
               exit 1
             }
             
