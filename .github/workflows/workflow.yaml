@@ -195,9 +195,9 @@ jobs:
           '
 
       - name: Setup nginx for frontend
-      run: |
-        EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'EOF_SSH'
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'EOF_SSH'
           sudo tee /etc/nginx/sites-enabled/default > /dev/null << 'EOF_NGINX'
           server {
               listen 80;
@@ -223,7 +223,7 @@ jobs:
           EOF_NGINX
           
           sudo nginx -t && sudo systemctl reload nginx
-        EOF_SSH
+          EOF_SSH
 
   build-api:
     name: Build API
@@ -366,9 +366,9 @@ jobs:
           '
 
       - name: Setup nginx for API
-      run: |
-        EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'EOF_SSH'
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'EOF_SSH'
           sudo tee /etc/nginx/sites-enabled/default > /dev/null << 'EOF_NGINX'
           server {
               listen 80;
@@ -394,7 +394,7 @@ jobs:
           EOF_NGINX
           
           sudo nginx -t && sudo systemctl reload nginx
-        EOF_SSH
+          EOF_SSH
 
   issue-certificates-web:
     needs:
