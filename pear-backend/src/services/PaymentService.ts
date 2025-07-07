@@ -1,37 +1,66 @@
 import type { PaymentNotification } from "../types/publicApi.js"
-import type { OrderService } from "./OrderService.js"
-import type { StockService } from "./StockService.js"
+import {pool} from "../config/database.js";
 
 export class PaymentService {
-  constructor(
-    private orderService: OrderService,
-    private stockService: StockService,
-  ) {}
-
   async processPayment(payment: PaymentNotification): Promise<void> {
-    const reservation = await this.orderService.getOrderReservation(payment.reference)
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    if (!reservation) {
-      throw new Error(`Order ${payment.reference} not found or expired`)
+      const lookup = await client.query<{
+        price: string;
+        status_desc: string;
+      }>(
+        `
+        SELECT
+          o.price::text     AS price,
+          s.description     AS status_desc
+        FROM orders o
+        JOIN status s
+          ON o.status = s.status_id
+        WHERE o.order_id = $1
+        FOR UPDATE
+        `,
+        [payment.reference]
+      );
+
+      if (lookup.rowCount === 0) {
+        throw new Error(`Order ${payment.reference} not found.`);
+      }
+
+      const { price, status_desc } = lookup.rows[0];
+      const orderTotal = parseFloat(price);
+
+      if (status_desc !== "reserved") {
+        throw new Error(`Order ${payment.reference} is not in 'reserved' status.`);
+      }
+
+      if (Math.abs(orderTotal - payment.amount) > 0.001) {
+        throw new Error(
+          `Payment amount ${payment.amount} does not match order total ${orderTotal}.`
+        );
+      }
+
+      await client.query(
+        `
+        UPDATE orders
+           SET status = (
+             SELECT status_id
+               FROM status
+              WHERE description = 'paid'
+           )
+         WHERE order_id = $1
+      `,
+        [payment.reference]
+      );
+
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-
-    if (new Date() > reservation.expires_at) {
-      await this.orderService.cancelOrder(payment.reference)
-      throw new Error(`Order ${payment.reference} has expired`)
-    }
-
-    if (Math.abs(payment.amount - reservation.total_price) > 0.01) {
-      throw new Error(`Payment amount ${payment.amount} does not match order total ${reservation.total_price}`)
-    }
-
-    // Confirm stock sale (move from reserved to sold)
-    for (const item of reservation.items) {
-      await this.stockService.confirmStockSale(item.phone_id, item.quantity)
-    }
-
-    // TODO: Update order status in database to "paid"
     // TODO: Create consumer delivery record
-
-    console.log(`Payment confirmed for order ${payment.reference}: $${payment.amount}`)
   }
 }
