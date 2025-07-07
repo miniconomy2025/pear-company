@@ -195,37 +195,35 @@ jobs:
           '
 
       - name: Setup nginx for frontend
-        run: |
-          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            # Create nginx config for frontend
-            sudo tee /etc/nginx/sites-enabled/default > /dev/null <<EOF
-            server {
-                listen 80;
-                server_name pear-company.projects.bbdgrad.com;
+      run: |
+        EC2_HOST=${{ needs.terraform.outputs.webec2host }}
+        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'EOF_SSH'
+          sudo tee /etc/nginx/sites-enabled/default > /dev/null << 'EOF_NGINX'
+          server {
+              listen 80;
+              server_name pear-company.projects.bbdgrad.com;
 
-                # Required for Certbot HTTP-01 challenge
-                location /.well-known/acme-challenge/ {
-                    root /var/www/html;
-                }
+              # Required for Certbot HTTP-01 challenge
+              location /.well-known/acme-challenge/ {
+                  root /var/www/html;
+              }
 
-                location / {
-                    proxy_pass http://localhost:3000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-            }
-            EOF
-            
-            # Test and reload nginx
-            sudo nginx -t && sudo systemctl reload nginx
-          '
+              location / {
+                  proxy_pass http://localhost:3000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host \$host;
+                  proxy_cache_bypass \$http_upgrade;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+          }
+          EOF_NGINX
+          
+          sudo nginx -t && sudo systemctl reload nginx
+        EOF_SSH
 
   build-api:
     name: Build API
@@ -368,37 +366,35 @@ jobs:
           '
 
       - name: Setup nginx for API
-        run: |
-          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            # Create nginx config for API
-            sudo tee /etc/nginx/sites-enabled/default > /dev/null <<EOF
-            server {
-                listen 80;
-                server_name pear-company-api.projects.bbdgrad.com;
+      run: |
+        EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'EOF_SSH'
+          sudo tee /etc/nginx/sites-enabled/default > /dev/null << 'EOF_NGINX'
+          server {
+              listen 80;
+              server_name pear-company-api.projects.bbdgrad.com;
 
-                # Required for Certbot HTTP-01 challenge
-                location /.well-known/acme-challenge/ {
-                    root /var/www/html;
-                }
+              # Required for Certbot HTTP-01 challenge
+              location /.well-known/acme-challenge/ {
+                  root /var/www/html;
+              }
 
-                location / {
-                    proxy_pass http://localhost:5000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-            }
-            EOF
-            
-            # Test and reload nginx
-            sudo nginx -t && sudo systemctl reload nginx
-          '
+              location / {
+                  proxy_pass http://localhost:5000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host \$host;
+                  proxy_cache_bypass \$http_upgrade;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+          }
+          EOF_NGINX
+          
+          sudo nginx -t && sudo systemctl reload nginx
+        EOF_SSH
 
   issue-certificates-web:
     needs:
@@ -435,7 +431,7 @@ jobs:
           sudo apt install certbot python3-certbot-nginx -y
           
           # Issue SSL certificate for web domain
-          sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
+          sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.com
           
           # Verify certificate
           sudo certbot certificates
@@ -484,7 +480,7 @@ jobs:
           sudo apt install certbot python3-certbot-nginx -y
           
           # Issue SSL certificate for API domain
-          sudo certbot --nginx -d pear-company-api.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
+          sudo certbot --nginx -d pear-company-api.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.com
           
           # Verify certificate
           sudo certbot certificates
@@ -524,7 +520,7 @@ jobs:
             API_EC2_PRIVATE_KEY, apiprivatekey
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
-      
+            
       - name: Export secrets as environment variables
         run: |
           echo "POSTGRES_USER=${{ env.POSTGRES_USER }}" >> $GITHUB_ENV
@@ -544,9 +540,7 @@ jobs:
           else
             DB_HOST_ONLY="$DB_HOST"
           fi
-
           echo "Connecting to: $DB_HOST_ONLY"
-
           docker run --rm \
             --volume ${{ github.workspace }}/migrations:/flyway/sql:ro \
             redgate/flyway \
@@ -554,5 +548,3 @@ jobs:
             -user="${{ env.POSTGRES_USER }}" \
             -password="${{ env.POSTGRES_PASS }}" \
             migrate
-
-
