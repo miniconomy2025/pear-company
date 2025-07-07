@@ -1,5 +1,4 @@
 import React from 'react';
-import { mockApiService } from '../../services/mockApiService';
 import './SupplierInventoryReport.css'
 
 const SupplierInventoryReport: React.FC = () => {

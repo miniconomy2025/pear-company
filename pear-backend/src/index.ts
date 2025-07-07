@@ -1,4 +1,6 @@
+import dotenv from "dotenv"
 import express from "express"
+import { testConnection } from "./config/database.js"
 import { container } from "./container/DIContainer.js"
 import { StockService } from "./services/StockService.js"
 import { OrderService } from "./services/OrderService.js"
@@ -12,12 +14,32 @@ import { SimulationController } from "./controllers/SimulationController.js"
 import { createPublicApiRoutes } from "./routes/publicApiRoutes.js"
 import { loggingMiddleware, errorHandlingMiddleware, notFoundMiddleware } from "./middleware/index.js"
 
+// Load environment variables from .env file
+dotenv.config()
+
 const app = express()
 const PORT = process.env.PORT || 5000
+
+// Test database connection on startup
+await testConnection()
 
 // Middleware setup
 app.use(express.json())
 app.use(loggingMiddleware)
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    database: {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+    },
+  })
+})
 
 // Dependency Injection setup - Services
 container.register("StockService", () => new StockService(), true)
@@ -90,8 +112,10 @@ app.get("/", (req, res) => {
     message: "Pear Company Manufacturing API",
     company: "Pear Company - Premium Phone Manufacturer",
     version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
     endpoints: {
       public: "/public-api/*",
+      health: "/health",
     },
     available_phones: ["Pear Phone Basic", "Pear Phone Pro", "Pear Phone Max"],
     patterns: [
@@ -116,7 +140,7 @@ app.use(errorHandlingMiddleware)
 app.listen(PORT, () => {
   console.log(`🍐 Pear Company Manufacturing API Server`)
   console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📱 Phone Models: Basic ($299.99), Pro ($599.99), Max ($899.99)`)
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
   console.log(`🔗 Public API: http://localhost:${PORT}/public-api`)
   console.log(`📋 API Documentation: /documentation/public-api.yaml`)
   console.log(`🏭 Ready for manufacturing simulation!`)
