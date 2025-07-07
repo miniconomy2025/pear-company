@@ -530,25 +530,10 @@ jobs:
           echo "${{ env.API_EC2_PRIVATE_KEY }}" > privatekey.pem
           chmod 0500 privatekey.pem
 
-      - name: Copy migration files to EC2
-        run: |
-          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          
-          # Create migrations directory on EC2
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" 'mkdir -p /home/ubuntu/migrations'
-          
-          # Copy migration files
-          scp -o StrictHostKeyChecking=no -i privatekey.pem -r ./migrations/* "ubuntu@$EC2_HOST:/home/ubuntu/migrations/"
-
       - name: Run Flyway Migrations
         run: |
+          # Extract DB host and strip port if necessary
           DB_HOST="${{ needs.terraform.outputs.dbhost }}"
-          DB_USER="${{ env.POSTGRES_USER }}"
-          DB_PASS="${{ env.POSTGRES_PASS }}"
-
-          echo "Raw DB_HOST: $DB_HOST"
-
-          # Extract just the host (remove :5432 if present)
           if [[ "$DB_HOST" == *":"* ]]; then
             DB_HOST_ONLY="${DB_HOST%:*}"
           else
@@ -561,8 +546,8 @@ jobs:
             --volume ${{ github.workspace }}/migrations:/flyway/sql:ro \
             redgate/flyway \
             -url="jdbc:postgresql://$DB_HOST_ONLY:5432/peardb" \
-            -user="$DB_USER" \
-            -password="$DB_PASS" \
+            -user="${{ secrets.postgresuser }}" \
+            -password="${{ secrets.postgrespass }}" \
             migrate
 
 
