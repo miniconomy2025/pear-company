@@ -75,7 +75,7 @@ resource "aws_db_instance" "peardb" {
   engine                    = "postgres"
   engine_version            = "16.8"
   instance_class            = "db.t4g.micro"
-  db_name                   = "pearDB"
+  db_name                   = "peardb"
   allocated_storage         = 20
   storage_type              = "gp2"
   publicly_accessible       = true
