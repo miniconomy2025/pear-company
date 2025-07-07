@@ -562,11 +562,13 @@ jobs:
               sudo apt install -y postgresql-client-16
             fi
             
-            # Test database connection first (fix the host format)
+            # Test database connection first (extract hostname without port)
             echo "Testing database connection..."
-            PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p 5432 -U "$DB_USER" -d peardb -c "SELECT version();" || {
+            DB_HOST_ONLY=$(echo "$DB_HOST" | cut -d':' -f1)
+            echo "Connecting to host: $DB_HOST_ONLY"
+            PGPASSWORD="$DB_PASS" psql -h "$DB_HOST_ONLY" -p 5432 -U "$DB_USER" -d peardb -c "SELECT version();" || {
               echo "Database connection test failed!"
-              echo "Host: $DB_HOST"
+              echo "Host: $DB_HOST_ONLY"
               echo "User: $DB_USER"
               echo "Database: peardb"
               exit 1
@@ -579,7 +581,7 @@ jobs:
             sudo docker run --rm \
               --volume /home/ubuntu/migrations:/flyway/sql:ro \
               redgate/flyway \
-              -url="jdbc:postgresql://$DB_HOST:5432/peardb" \
+              -url="jdbc:postgresql://$DB_HOST_ONLY:5432/peardb" \
               -user="$DB_USER" \
               -password="$DB_PASS" \
               migrate
