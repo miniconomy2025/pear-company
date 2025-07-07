@@ -548,29 +548,38 @@ jobs:
           DB_PASS="${{ env.POSTGRES_PASS }}"
           
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << EOSSH
-            # Install Docker if not present
+            # Install Docker and PostgreSQL client if not present
             if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
+              echo "Installing Docker and PostgreSQL client..."
               sudo apt update
-              sudo apt install -y docker.io
+              sudo apt install -y docker.io postgresql-client-16
               sudo systemctl start docker
               sudo systemctl enable docker
               sudo usermod -aG docker ubuntu
+            elif ! command -v psql &> /dev/null; then
+              echo "Installing PostgreSQL client..."
+              sudo apt update
+              sudo apt install -y postgresql-client-16
             fi
             
-            # Test database connection first
+            # Test database connection first (fix the host format)
             echo "Testing database connection..."
-            PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d peardb -c "SELECT version();" || {
+            PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p 5432 -U "$DB_USER" -d peardb -c "SELECT version();" || {
               echo "Database connection test failed!"
+              echo "Host: $DB_HOST"
+              echo "User: $DB_USER"
+              echo "Database: peardb"
               exit 1
             }
+            
+            echo "Database connection successful!"
             
             # Run Flyway migration using Docker with explicit credentials
             echo "Running Flyway migrations..."
             sudo docker run --rm \
               --volume /home/ubuntu/migrations:/flyway/sql:ro \
               redgate/flyway \
-              -url="jdbc:postgresql://$DB_HOST/peardb" \
+              -url="jdbc:postgresql://$DB_HOST:5432/peardb" \
               -user="$DB_USER" \
               -password="$DB_PASS" \
               migrate
