@@ -76,7 +76,7 @@ jobs:
       - name: Install required dependencies
         run: npm install
         working-directory: pear-frontend
-        
+
       - name: Build application
         run: npm run build
         working-directory: pear-frontend
@@ -88,7 +88,7 @@ jobs:
           cp -r build front-end-build/
           cp package.json front-end-build/
           zip -r front-end-build.zip front-end-build
-          
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -100,7 +100,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: 
+    needs:
       - build-front-end
       - terraform
     runs-on: ubuntu-latest
@@ -153,14 +153,14 @@ jobs:
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-          
+
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./front-end-build.zip "ubuntu@$EC2_HOST:front-end-build.zip"
-          
+
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o front-end-build.zip && cd front-end-build/ &&
             npm install
           '
-          
+
           # CREATE THE MISSING SCRIPT
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             cat <<EOF > start-serve.sh
@@ -168,7 +168,7 @@ jobs:
           npx serve -s build
           EOF'
 
-      - name: Make script executable 
+      - name: Make script executable
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
@@ -202,7 +202,7 @@ jobs:
       - name: Install required dependencies
         run: npm install
         working-directory: pear-backend
-        
+
       - name: Compile Typescript to Javascript
         run: npm run build-linux
         working-directory: pear-backend
@@ -214,7 +214,7 @@ jobs:
           cp -r dist api-build/
           cp package.json api-build/
           zip -r api-build.zip api-build
-          
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -226,7 +226,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: 
+    needs:
       - build-api
       - terraform
     runs-on: ubuntu-latest
@@ -286,7 +286,7 @@ jobs:
       - name: Set env variables (SECURE)
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          
+
           # Create .env file securely without logging sensitive data
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'ENVEOF'
           echo "Creating secure environment file..."
@@ -298,18 +298,18 @@ jobs:
           NODE_ENV=production
           PORT=5000
           EOF
-          
+
           # Set proper permissions
           chmod 600 /home/ubuntu/.env
           echo "Environment file created securely (no sensitive data logged)"
           ENVEOF
-        
+
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          
+
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./api-build.zip "ubuntu@$EC2_HOST:api-build.zip"
-          
+
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o api-build.zip &&
             cd api-build/ &&
@@ -331,92 +331,92 @@ jobs:
 
   issue-certificates:
     needs:
-    - deploy-api
-    - terraform
+      - deploy-api
+      - terraform
     permissions:
-        id-token: write
-        contents: read
+      id-token: write
+      contents: read
     name: Issue Certificates
     runs-on: ubuntu-latest
     steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        role-to-assume: arn:aws:iam::804180393465:role/github-role
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::804180393465:role/github-role
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Get secrets from AWS Key Store
-      uses: aws-actions/aws-secretsmanager-get-secrets@v2
-      with:
-        secret-ids: |
-          API_EC2_PRIVATE_KEY, apiprivatekey
+      - name: Get secrets from AWS Key Store
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            API_EC2_PRIVATE_KEY, apiprivatekey
 
-    - name: Setup private key
-      run: |
-        echo "${{ env.API_EC2_PRIVATE_KEY }}" > privatekey.pem
-        chmod 0500 privatekey.pem
+      - name: Setup private key
+        run: |
+          echo "${{ env.API_EC2_PRIVATE_KEY }}" > privatekey.pem
+          chmod 0500 privatekey.pem
 
-    - name: Setup nginx proxy
-      run: |
-        EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
-        
-        # Backup existing nginx config
-        sudo cp /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.backup 2>/dev/null || true
-        
-        # Create new nginx configuration
-        sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
-        server {
-        listen 80;
-        server_name bbd-grad-project.co.za www.bbd-grad-project.co.za;
+      - name: Setup nginx proxy
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
 
-        # Required for Certbot's HTTP-01 challenge
-        location /.well-known/acme-challenge/ {
-            root /var/www/html;
-        }
+          # Backup existing nginx config
+          sudo cp /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.backup 2>/dev/null || true
 
-        location / {
-            proxy_pass http://localhost:3000; # Front-end
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host $host;
-            proxy_cache_bypass $http_upgrade;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+          # Create new nginx configuration
+          sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
+          server {
+          listen 80;
+          server_name bbd-grad-project.co.za www.bbd-grad-project.co.za;
 
-        location /public-api/ {
-            proxy_pass http://localhost:5000/public-api/; # API
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host $host;
-            proxy_cache_bypass $http_upgrade;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-        }
-        NGINX_CONF
-        
-        echo "Nginx configuration updated successfully"
-        EOF
+          # Required for Certbot's HTTP-01 challenge
+          location /.well-known/acme-challenge/ {
+              root /var/www/html;
+          }
 
-    - name: Verify and Reload nginx
-      run: |
-        EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-          echo "Testing nginx configuration..."
-          sudo nginx -t && echo "Nginx config is valid" || echo "Nginx config has errors"
-          
-          echo "Reloading nginx..."
-          sudo systemctl reload nginx && echo "Nginx reloaded successfully" || echo "Nginx reload failed"
-          
-          echo "Nginx status:"
-          sudo systemctl status nginx --no-pager -l
-        '
+          location / {
+              proxy_pass http://localhost:3000; # Front-end
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+
+          location /public-api/ {
+              proxy_pass http://localhost:5000/public-api/; # API
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+          }
+          NGINX_CONF
+
+          echo "Nginx configuration updated successfully"
+          EOF
+
+      - name: Verify and Reload nginx
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            echo "Testing nginx configuration..."
+            sudo nginx -t && echo "Nginx config is valid" || echo "Nginx config has errors"
+            
+            echo "Reloading nginx..."
+            sudo systemctl reload nginx && echo "Nginx reloaded successfully" || echo "Nginx reload failed"
+            
+            echo "Nginx status:"
+            sudo systemctl status nginx --no-pager -l
+          '
 
     # - name: Certbot
     #   run: |
@@ -425,7 +425,7 @@ jobs:
     #       sudo apt install certbot python3-certbot-nginx -y &&
     #       sudo certbot --nginx -d bbd-grad-project.co.za -d www.bbd-grad-project.co.za --non-interactive --agree-tos --email shashin.gounden@bbd.co.za
     #     '
-        
+
   flyway:
     needs:
       - terraform
@@ -452,6 +452,22 @@ jobs:
           secret-ids: |
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
+
+      - name: Debug Database Connection
+        run: |
+          echo "Testing database connection..."
+          echo "Host: ${{ needs.terraform.outputs.dbhost }}"
+          echo "User: ${{ env.POSTGRES_USER }}"
+          echo "Database: peardb"
+
+          # Test connection with psql
+          docker run --rm postgres:16 psql \
+            -h ${{ needs.terraform.outputs.dbhost }} \
+            -U ${{ env.POSTGRES_USER }} \
+            -d peardb \
+            -c "SELECT version();" || echo "Connection failed"
+        env:
+          PGPASSWORD: ${{ env.POSTGRES_PASS }}
 
       - name: Run Flyway Migrations
         run: |
