@@ -1,5 +1,5 @@
 
-import pool from "../config/db.js";
+import {pool} from "../config/database.js";
 import type { PublicStockItem, PublicStockResponse } from "../types/publicApi.js";
 
 export class StockService {

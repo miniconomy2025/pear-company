@@ -1,5 +1,5 @@
 import type { PublicOrderRequest, PublicOrderResponse, OrderReservation } from "../types/publicApi.js";
-import pool from "../config/db.js";
+import {pool} from "../config/database.js";
 import { StockService } from "./StockService.js";
 
 const stockService = new StockService();

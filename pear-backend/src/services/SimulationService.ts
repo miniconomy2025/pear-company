@@ -1,7 +1,7 @@
 import type { SimulationResponse } from "../types/publicApi.js"
 import type { OrderService } from "./OrderService.js"
 import type { ManufacturingService } from "./ManufacturingService.js"
-import pool from "../config/db.js";
+import {pool} from "../config/database.js";
 
 export class SimulationService {
   private currentTick = 0

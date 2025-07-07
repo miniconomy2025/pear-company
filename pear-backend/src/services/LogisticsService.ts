@@ -1,5 +1,5 @@
 import type { DeliveryConfirmation } from "../types/publicApi.js";
-import pool from "../config/db.js";
+import {pool} from "../config/database.js";
 
 export class LogisticsService {
   constructor() {}
