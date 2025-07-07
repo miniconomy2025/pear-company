@@ -435,7 +435,7 @@ jobs:
           sudo apt install certbot python3-certbot-nginx -y
           
           # Issue SSL certificate for web domain
-          sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email shashin.gounden@bbd.co.za
+          sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
           
           # Verify certificate
           sudo certbot certificates
@@ -484,7 +484,7 @@ jobs:
           sudo apt install certbot python3-certbot-nginx -y
           
           # Issue SSL certificate for API domain
-          sudo certbot --nginx -d pear-company-api.projects.bbdgrad.com --non-interactive --agree-tos --email shashin.gounden@bbd.co.za
+          sudo certbot --nginx -d pear-company-api.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
           
           # Verify certificate
           sudo certbot certificates
@@ -543,8 +543,11 @@ jobs:
       - name: Run Flyway Migrations from EC2
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
+          DB_HOST="${{ needs.terraform.outputs.dbhost }}"
+          DB_USER="${{ env.POSTGRES_USER }}"
+          DB_PASS="${{ env.POSTGRES_PASS }}"
           
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << EOSSH
             # Install Docker if not present
             if ! command -v docker &> /dev/null; then
               echo "Installing Docker..."
@@ -555,15 +558,32 @@ jobs:
               sudo usermod -aG docker ubuntu
             fi
             
-            # Run Flyway migration using Docker
+            # Test database connection first
+            echo "Testing database connection..."
+            PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d peardb -c "SELECT version();" || {
+              echo "Database connection test failed!"
+              exit 1
+            }
+            
+            # Run Flyway migration using Docker with explicit credentials
             echo "Running Flyway migrations..."
             sudo docker run --rm \
               --volume /home/ubuntu/migrations:/flyway/sql:ro \
               redgate/flyway \
-              -url="jdbc:postgresql://${{ needs.terraform.outputs.dbhost }}/peardb" \
-              -user="${{ env.POSTGRES_USER }}" \
-              -password="${{ env.POSTGRES_PASS }}" \
+              -url="jdbc:postgresql://$DB_HOST/peardb" \
+              -user="$DB_USER" \
+              -password="$DB_PASS" \
               migrate
             
-            echo "Migration completed successfully!"
-          '
+            # Check if migration was successful
+            if [ \$? -eq 0 ]; then
+              echo "Migration completed successfully!"
+            else
+              echo "Migration failed!"
+              exit 1
+            fi
+          EOSSH
+        env:
+          DB_HOST: ${{ needs.terraform.outputs.dbhost }}
+          DB_USER: ${{ env.POSTGRES_USER }}
+          DB_PASS: ${{ env.POSTGRES_PASS }}
