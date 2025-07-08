@@ -1,11 +1,13 @@
 import type { SimulationResponse } from "../types/publicApi.js"
 import type { OrderService } from "./OrderService.js"
+import type { ManufacturingService } from "./ManufacturingService.js"
+import {pool} from "../config/database.js";
 
 export class SimulationService {
   private currentTick = 0
   private simulationRunning = false
 
-  constructor(private orderService: OrderService) {}
+  constructor(private orderService: OrderService, private manufacturingService: ManufacturingService) {}
 
   async startSimulation(): Promise<SimulationResponse> {
     this.simulationRunning = true
@@ -25,10 +27,10 @@ export class SimulationService {
       throw new Error("Simulation is not running. Start simulation first.")
     }
 
-    this.currentTick++
+    this.currentTick++ 
 
     // Process manufacturing (machines produce phones)
-    await this.processManufacturing()
+    await this.manufacturingService.processManufacturing();
 
     // Clean up expired reservations
     this.orderService.cleanupExpiredReservations()
@@ -43,14 +45,6 @@ export class SimulationService {
       tick: this.currentTick,
       status: "running",
     }
-  }
-
-  private async processManufacturing(): Promise<void> {
-    // TODO: Query machines and their production rates
-    // TODO: Check parts inventory
-    // TODO: Produce phones based on machine capacity
-    // TODO: Update stock levels
-    console.log(`Manufacturing processed for tick ${this.currentTick}`)
   }
 
   getCurrentTick(): number {
