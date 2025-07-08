@@ -24,9 +24,10 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "pearphones-dev": "file:..",
-    "pg": "^8.16.3",
+    "axios": "^1.10.0",
     "dotenv": "^17.0.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pearphones-dev": "file:..",
+    "pg": "^8.16.3"
   }
 }
