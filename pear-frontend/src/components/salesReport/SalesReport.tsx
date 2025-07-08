@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getSalesReport, SalesReportItem } from '../../services/salesReportService';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -14,18 +14,18 @@ const SalesReport: React.FC = () => {
   const [fromDate, setFromDate] = useState<string>('2025-07-01');
   const [toDate, setToDate] = useState<string>('2025-07-30');
 
-  const getFilteredData = async () => {
-    const sales = await getSalesReport(fromDate, toDate);
+  const getFilteredData = useCallback(async () => {
+    const sales = await getSalesReport(fromDate, toDate)
     const filtered = sales.filter((item) => {
       const d = new Date(item.date);
       return d >= new Date(fromDate) && d <= new Date(toDate);
     });
     setData(filtered);
-  };
+  }, [fromDate, toDate])
 
   useEffect(() => {
     getFilteredData();
-  }, []);
+  }, [getFilteredData]);
 
   const totals = data.reduce<Record<string, { units: number; revenue: number }>>((acc, curr) => {
     const key = curr.model.toLowerCase();
