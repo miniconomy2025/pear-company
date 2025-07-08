@@ -32,4 +32,37 @@ export class LogisticsController {
       })
     }
   }
+
+  getBulkDeliveries = async (req: Request, res: Response) => {
+    try {
+      const bulkDeliveries =
+        await this.logisticsService.getBulkDeliveries();
+      res.json(bulkDeliveries);
+    } catch (error) {
+      console.error("Error fetching bulk deliveries:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+
+  getConsumerDeliveries = async (req: Request, res: Response) => {
+    try {
+      const consumerDeliveries =
+        await this.logisticsService.getConsumerDeliveries();
+      res.json(consumerDeliveries);
+    } catch (error) {
+      console.error("Error fetching consumer deliveries:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+
+  getConsumerPendingDeliveries = async (req: Request, res: Response) => {
+    try {
+      const consumerPendingDeliveries =
+        await this.logisticsService.getConsumerPendingDeliveries();
+      res.json(consumerPendingDeliveries);
+    } catch (error) {
+      console.error("Error fetching consumer pending deliveries:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
 }

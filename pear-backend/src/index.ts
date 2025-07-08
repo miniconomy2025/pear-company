@@ -1,32 +1,66 @@
-import dotenv from "dotenv"
-import express from "express"
-import { testConnection } from "./config/database.js"
-import { container } from "./container/DIContainer.js"
-import { StockService } from "./services/StockService.js"
-import { OrderService } from "./services/OrderService.js"
-import { PaymentService } from "./services/PaymentService.js"
-import { LogisticsService } from "./services/LogisticsService.js"
-import { SimulationService } from "./services/SimulationService.js"
-import { ManufacturingService } from "./services/ManufacturingService.js"
-import { StockController } from "./controllers/StockController.js"
-import { OrderController } from "./controllers/OrderController.js"
-import { LogisticsController } from "./controllers/LogisticsController.js"
-import { SimulationController } from "./controllers/SimulationController.js"
-import { createPublicApiRoutes } from "./routes/publicApiRoutes.js"
-import { loggingMiddleware, errorHandlingMiddleware, notFoundMiddleware } from "./middleware/index.js"
+import dotenv from "dotenv";
+import express from "express";
+import { testConnection } from "./config/database.js";
+import { container } from "./container/DIContainer.js";
+import { StockService } from "./services/StockService.js";
+import { OrderService } from "./services/OrderService.js";
+import { PaymentService } from "./services/PaymentService.js";
+import { LogisticsService } from "./services/LogisticsService.js";
+import { SimulationService } from "./services/SimulationService.js";
+import { ManufacturingService } from "./services/ManufacturingService.js";
+import { StockController } from "./controllers/StockController.js";
+import { OrderController } from "./controllers/OrderController.js";
+import { LogisticsController } from "./controllers/LogisticsController.js";
+import { SimulationController } from "./controllers/SimulationController.js";
+import { createPublicApiRoutes } from "./routes/publicApiRoutes.js";
+import {
+  loggingMiddleware,
+  errorHandlingMiddleware,
+  notFoundMiddleware,
+} from "./middleware/index.js";
+import { InventoryService } from "./services/InventoryService.js";
+import { InventoryController } from "./controllers/InventoryController.js";
+import { FinancialService } from "./services/FinancialService.js";
+import { FinancialController } from "./controllers/FinancialController.js";
+import { ProductionService } from "./services/ProductionService.js";
+import { ProductionController } from "./controllers/ProductionController.js";
+import { createInternalApiRoutes } from "./routes/internalApiRoutes.js";
+import cors from "cors";
 
 // Load environment variables from .env file
-dotenv.config()
+dotenv.config();
 
-const app = express()
-const PORT = process.env.PORT || 5000
+const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Test database connection on startup
-await testConnection()
+await testConnection();
 
 // Middleware setup
-app.use(express.json())
-app.use(loggingMiddleware)
+app.use(express.json());
+app.use(loggingMiddleware);
+
+// Configure CORS
+const allowedOrigins = [
+  "https://pear-company.projects.bbdgrad.com",
+  // "http://localhost:3000", // for local dev
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -39,70 +73,104 @@ app.get("/health", (req, res) => {
       port: process.env.DB_PORT,
       database: process.env.DB_NAME,
     },
-  })
-})
+  });
+});
 
 // Dependency Injection setup - Services
-container.register("StockService", () => new StockService(), true)
+container.register("StockService", () => new StockService(), true);
 container.register(
   "OrderService",
   () => {
-    return new OrderService()
+    return new OrderService();
   },
-  true,
-)
+  true
+);
 container.register(
   "PaymentService",
   () => {
-    return new PaymentService()
+    return new PaymentService();
   },
-  true,
-)
-container.register("LogisticsService", () => new LogisticsService(), true)
+  true
+);
+container.register("LogisticsService", () => new LogisticsService(), true);
 container.register(
   "SimulationService",
   () => {
-    const orderService = container.resolve<OrderService>("OrderService")
-    const manufacturingService = container.resolve<ManufacturingService>("OrderService")
-    return new SimulationService(orderService, manufacturingService)
+    const orderService = container.resolve<OrderService>("OrderService");
+    const manufacturingService =
+      container.resolve<ManufacturingService>("OrderService");
+    return new SimulationService(orderService, manufacturingService);
   },
-  true,
-)
+  true
+);
 
 // Dependency Injection setup - Controllers
 container.register(
   "StockController",
   () => {
-    const stockService = container.resolve<StockService>("StockService")
-    return new StockController(stockService)
+    const stockService = container.resolve<StockService>("StockService");
+    return new StockController(stockService);
   },
-  true,
-)
+  true
+);
 container.register(
   "OrderController",
   () => {
-    const orderService = container.resolve<OrderService>("OrderService")
-    const paymentService = container.resolve<PaymentService>("PaymentService")
-    return new OrderController(orderService, paymentService)
+    const orderService = container.resolve<OrderService>("OrderService");
+    const paymentService = container.resolve<PaymentService>("PaymentService");
+    return new OrderController(orderService, paymentService);
   },
-  true,
-)
+  true
+);
 container.register(
   "LogisticsController",
   () => {
-    const logisticsService = container.resolve<LogisticsService>("LogisticsService")
-    return new LogisticsController(logisticsService)
+    const logisticsService =
+      container.resolve<LogisticsService>("LogisticsService");
+    return new LogisticsController(logisticsService);
   },
-  true,
-)
+  true
+);
 container.register(
   "SimulationController",
   () => {
-    const simulationService = container.resolve<SimulationService>("SimulationService")
-    return new SimulationController(simulationService)
+    const simulationService =
+      container.resolve<SimulationService>("SimulationService");
+    return new SimulationController(simulationService);
   },
-  true,
-)
+  true
+);
+container.register("InventoryService", () => new InventoryService(), true);
+container.register(
+  "InventoryController",
+  () => {
+    const inventoryService =
+      container.resolve<InventoryService>("InventoryService");
+    return new InventoryController(inventoryService);
+  },
+  true
+);
+container.register("FinancialService", () => new FinancialService(), true);
+container.register(
+  "FinancialController",
+  () => {
+    const financialService =
+      container.resolve<FinancialService>("FinancialService");
+    return new FinancialController(financialService);
+  },
+  true
+);
+
+container.register("ProductionService", () => new ProductionService(), true);
+container.register(
+  "ProductionController",
+  () => {
+    const productionService =
+      container.resolve<ProductionService>("ProductionService");
+    return new ProductionController(productionService);
+  },
+  true
+);
 
 // Routes setup
 app.get("/", (req, res) => {
@@ -126,21 +194,24 @@ app.get("/", (req, res) => {
       "Middleware Pattern",
       "Single Responsibility Principle",
     ],
-  })
-})
+  });
+});
 
 // Public API routes
-app.use("/public-api", createPublicApiRoutes())
+app.use("/public-api", createPublicApiRoutes());
+
+// Internal/Admin API routes
+app.use("/internal-api", createInternalApiRoutes());
 
 // Error handling
-app.use(notFoundMiddleware)
-app.use(errorHandlingMiddleware)
+app.use(notFoundMiddleware);
+app.use(errorHandlingMiddleware);
 
 app.listen(PORT, () => {
-  console.log(`🍐 Pear Company Manufacturing API Server`)
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
-  console.log(`🔗 Public API: http://localhost:${PORT}/public-api`)
-  console.log(`📋 API Documentation: /documentation/public-api.yaml`)
-  console.log(`🏭 Ready for manufacturing simulation!`)
-})
+  console.log(`🍐 Pear Company Manufacturing API Server`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`🔗 Public API: http://localhost:${PORT}/public-api`);
+  console.log(`📋 API Documentation: /documentation/public-api.yaml`);
+  console.log(`🏭 Ready for manufacturing simulation!`);
+});
