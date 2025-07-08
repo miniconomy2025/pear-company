@@ -218,5 +218,24 @@ export class OrderService {
       client.release();
     }
   }
+
+  getAllOrders = async (from: string, to: string) => {
+    const query = `
+    SELECT
+      p.model,
+      DATE(o.created_at) AS date,
+      SUM(oi.quantity)::INTEGER AS units_sold,
+      SUM(oi.quantity * p.price)::INTEGER AS revenue
+    FROM order_items oi
+    JOIN orders o ON o.order_id = oi.order_id
+    JOIN phones p ON p.phone_id = oi.phone_id
+      WHERE o.created_at BETWEEN $1 AND $2
+    GROUP BY p.model, DATE(o.created_at)
+    ORDER BY date
+  `;
+
+    const result = await pool.query(query, [from, to]);
+    return result.rows;
+  };
 }
 

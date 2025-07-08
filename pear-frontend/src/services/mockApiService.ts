@@ -15,11 +15,11 @@ export const mockApiService = {
     ];
   },
 
-  async fetchSalesData(period: string) {
+  async fetchSalesData() {
     return [
-      { model: 'ePhone', unitsSold: 120, revenue: 36000, date: '2025-07-01' },
-      { model: 'ePhone plus', unitsSold: 80, revenue: 32000, date: '2025-07-25' },
-      { model: 'ePhone pro max', unitsSold: 45, revenue: 31500, date: '2025-07-16' },
+      { model: 'ePhone', units_sold: 120, revenue: 36000, date: '2025-07-01' },
+      { model: 'ePhone plus', units_sold: 80, revenue: 32000, date: '2025-07-25' },
+      { model: 'ePhone pro max', units_sold: 45, revenue: 31500, date: '2025-07-16' },
     ];
   },
 
@@ -40,7 +40,7 @@ export const mockApiService = {
 
   async fetchFinancialData() {
     return {
-      revenue: 282500,
+      revenue: 82500,
       expenses: {
         manufacturing: 80000,
         logistics: 10000,

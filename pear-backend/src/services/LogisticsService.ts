@@ -97,5 +97,69 @@ export class LogisticsService {
       client.release();
     }
   }
+
+  getBulkDeliveries = async () => {
+    const query = `
+      SELECT 
+        p.name AS part,
+        SUM(ppi.quantity) AS quantity,
+        SUM(bd.cost) AS cost
+      FROM 
+        bulk_deliveries bd
+      JOIN parts_purchases pp ON bd.parts_purchase_id = pp.parts_purchase_id
+      JOIN parts_purchases_items ppi ON ppi.parts_purchase_id = pp.parts_purchase_id
+      JOIN parts_supplier ps ON ppi.part_supplier_id = ps.parts_supplier_id
+      JOIN parts p ON ps.part_id = p.part_id
+      GROUP BY 
+        p.name
+      ORDER BY 
+        p.name;
+
+    `;
+
+    const result = await pool.query(query);
+    return result.rows;
+  };
+
+  getConsumerDeliveries = async () => {
+    const query = `
+    SELECT 
+      ph.model,
+      SUM(oi.quantity) AS delivered,
+      SUM(cd.cost) AS cost
+    FROM 
+      consumer_deliveries cd
+    JOIN orders o ON cd.order_id = o.order_id
+    JOIN order_items oi ON o.order_id = oi.order_id
+    JOIN phones ph ON oi.phone_id = ph.phone_id
+    GROUP BY 
+      ph.model
+    ORDER BY 
+      ph.model;
+    `;
+
+    const result = await pool.query(query);
+    return result.rows;
+  };
+
+  getConsumerPendingDeliveries = async () => {
+    const query = `
+    SELECT 
+      p.model,
+      SUM(oi.quantity)::INTEGER AS units_pending,
+      SUM(cd.cost) AS cost
+    FROM consumer_deliveries cd
+    JOIN orders o ON o.order_id = cd.order_id
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN phones p ON p.phone_id = oi.phone_id
+    WHERE cd.status = (
+      SELECT status_id FROM status WHERE description = 'Pending'
+    )
+    GROUP BY p.model
+    ORDER BY p.model;
+  `;
+    const result = await pool.query(query);
+    return result.rows;
+  };
 }
 
