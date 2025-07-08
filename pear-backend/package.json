@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.7",
     "@types/pg": "^8.15.4",
@@ -24,9 +25,10 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "pearphones-dev": "file:..",
-    "pg": "^8.16.3",
+    "cors": "^2.8.5",
     "dotenv": "^17.0.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pearphones-dev": "file:..",
+    "pg": "^8.16.3"
   }
 }
