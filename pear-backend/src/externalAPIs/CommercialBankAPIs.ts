@@ -22,7 +22,7 @@ function handleError(err: unknown) {
   }
 }
 
-export async function createAccount() {
+export async function createAccount(): Promise<string | undefined> {
   try {
     const res = await client.post("/account", {});
     return res.data;
@@ -31,7 +31,7 @@ export async function createAccount() {
   }
 }
 
-export async function getMyAccount() {
+export async function getMyAccount(): Promise<string | undefined> {
   try {
     const res = await client.get("/account/me");
     return res.data;
@@ -40,7 +40,7 @@ export async function getMyAccount() {
   }
 }
 
-export async function setNotificationUrl(notification_url: string) {
+export async function setNotificationUrl(notification_url: string): Promise<boolean | undefined> {
   try {
     const res = await client.post("/account/me/notify", { notification_url });
     return res.data;
@@ -49,7 +49,7 @@ export async function setNotificationUrl(notification_url: string) {
   }
 }
 
-export async function getBalance() {
+export async function getBalance(): Promise<number | undefined> {
   try {
     const res = await client.get("/account/me/balance");
     return res.data;
@@ -58,7 +58,7 @@ export async function getBalance() {
   }
 }
 
-export async function isAccountFrozen() {
+export async function isAccountFrozen(): Promise<boolean | undefined> {
   try {
     const res = await client.get("/account/me/frozen");
     return res.data;
@@ -90,13 +90,6 @@ export async function createTransaction(payload: CommercialBankTransationRequest
   }
 }
 
-/**
- * GET /transaction?from=&to=&only_successful=
- * @param {number} from   epoch timestamp
- * @param {-+*} to     epoch timestamp
- * @param {boolean} [only_successful]
- * @returns {Promise<array>} Array<Transaction>
- */
 export async function getStatement(from: number, to: number, only_successful: boolean): Promise<Array<CommercialBankTransationItemResponse> |undefined> {
   try {
     const params = { from, to, only_successful };
