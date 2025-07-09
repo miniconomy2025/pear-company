@@ -2,8 +2,10 @@ import {pool} from "../config/database.js";
 import { createScreenOrder } from "../externalAPIs/ScreensAPIs.js";
 import { createCaseOrder } from "../externalAPIs/CaseAPIs.js";
 import { createElectronicsOrder } from "../externalAPIs/ElectronicsAPIs.js";
-import { createTransaction } from "../externalAPIs/COmmercialBankAPIs.js";
-import { createPickupRequest } from "../externalAPIs/BulkLogisticsAPIs.js";
+import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js";
+import { LogisticsService } from "./LogisticsService.js";
+
+const logisticsService = new LogisticsService();
 
 const THRESHOLDS: { [key: string]: number } = {
   screens: 500,
@@ -117,57 +119,9 @@ export class PartsInventoryService {
       );
       const partsPurchaseId = purchaseRes.rows[0].parts_purchase_id;
 
-      await this.requestBulkDelivery(partsPurchaseId, part);
+      await logisticsService.requestBulkDelivery(partsPurchaseId, part);
     } catch (err) {
       console.error(`Failed to order ${part}:`, err);
     }
-  }
-
-  private async requestBulkDelivery(
-    partsPurchaseId: number,
-    address: string
-  ): Promise<void> {
-
-    const pickupRes = await createPickupRequest({
-      originalExternalOrderId: partsPurchaseId.toString(),
-      originCompanyId: `${address}-supplier`,
-      destinationCompanyId: "pear-company",
-      items: [
-        { description: `delivery for #${address}`}
-      ]
-    });
-    console.log(`External pickup created:`, pickupRes);
-
-    if (!pickupRes?.bulkLogisticsBankAccountNumber || !pickupRes?.cost || !pickupRes?.paymentReferenceId || !pickupRes?.pickupRequestId) {
-      throw new Error(`Failed to create pickup`);
-    }
-
-    const refRes = await pool.query<{ nextval: number }>(
-      `SELECT nextval('bulk_deliveries_bulk_delivery_id_seq') AS nextval`
-    );
-    const deliveryReference = refRes.rows[0].nextval;
-
-    const statusRes = await pool.query<{ status_id: number }>(
-      `SELECT status_id FROM status WHERE description = 'pending'`
-    );
-    const statusId = statusRes.rows[0].status_id;
-
-    const { rows } = await pool.query<{ bulk_delivery_id: number }>(
-      `
-      INSERT INTO bulk_deliveries
-        (parts_purchase_id, delivery_reference, cost, status, address, account_id)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING bulk_delivery_id
-      `,
-      [partsPurchaseId, deliveryReference, pickupRes.cost, statusId, `${address}-supplier`, pickupRes.bulkLogisticsBankAccountNumber]
-    );
-    const bulkDeliveryId = rows[0].bulk_delivery_id;
-    console.log(`Inserted bulk_delivery_id=${bulkDeliveryId}`);
-
-    await createTransaction({
-      to_account_number: pickupRes.bulkLogisticsBankAccountNumber,
-      amount: pickupRes.cost,
-      description: `Payment for Order #${pickupRes.paymentReferenceId} for ${pickupRes.pickupRequestId}`
-    });
   }
 }

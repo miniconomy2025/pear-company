@@ -12,7 +12,26 @@ export class SimulationService {
   private tickTimer: NodeJS.Timeout | null = null
   private readonly TICK_INTERVAL_MS = 2 * 60 * 1000
 
-  constructor(private orderService: OrderService, private manufacturingService: ManufacturingService) {}
+  constructor(
+    private orderService: OrderService,
+    private manufacturingService: ManufacturingService,
+    private bankingService: BankingService,
+    private machinePurchasingService: MachinePurchasingService,
+  ) {}
+
+   private async cleanSimulationData(): Promise<void> {
+    const client = await pool.connect()
+    try {
+      console.log("Cleaning simulation data...")
+      await client.query("CALL clear_all_except_status_and_phones()")
+      console.log(" Simulation data cleaned successfully")
+    } catch (error) {
+      console.error("Error cleaning simulation data:", error)
+      throw error
+    } finally {
+      client.release()
+    }
+  }
 
   async startSimulation(): Promise<SimulationResponse> {
     if (this.simulationRunning) {
@@ -96,16 +115,30 @@ export class SimulationService {
       throw new Error("Simulation is not running. Start simulation first.")
     }
 
-    this.currentTick++ 
+    SimulatedClock.advanceDay()
+    const currentSimulatedDate = SimulatedClock.getSimulatedDate()
+    const currentSimulatedEndOfDay = SimulatedClock.getSimulatedEndOfDay()
 
-    // Process manufacturing (machines produce phones)
-    await this.manufacturingService.processManufacturing();
+    // Enhanced logging for testing
+    const realTime = new Date().toISOString()
+    const simDate = currentSimulatedDate.toISOString().split("T")[0]
+    const dayOffset = SimulatedClock.getCurrentSimulatedDayOffset()
 
-    // Clean up expired reservations
-    this.orderService.cleanupExpiredReservations()
+    console.log(`TICK at ${realTime}`)
+    console.log(`Simulated Date: ${simDate} (Day ${dayOffset})`)
+    console.log(`Processing simulated day: ${simDate}`)
 
-    // TODO: Process delivery statuses
-    // TODO: Process any scheduled events
+    const currentBalance = await this.bankingService.performDailyBalanceCheck(currentSimulatedDate)
+
+    await this.manufacturingService.processManufacturing(currentSimulatedDate)
+
+    await this.machinePurchasingService.performDailyMachineExpansion(currentSimulatedDate, currentBalance)
+
+    await this.manufacturingService.processManufacturing(currentSimulatedDate);
+
+    this.orderService.cleanupExpiredReservations(currentSimulatedDate)
+
+    await this.orderService.cleanupExpiredReservations(currentSimulatedDate)
 
     console.log(`Simulation tick (day ${dayOffset}) processed for ${simDate}`)
     console.log(`---`)
