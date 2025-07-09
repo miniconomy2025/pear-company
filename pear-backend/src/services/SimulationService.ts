@@ -2,6 +2,7 @@ import type { SimulationResponse } from "../types/publicApi.js"
 import type { OrderService } from "./OrderService.js"
 import type { ManufacturingService } from "./ManufacturingService.js"
 import { SimulatedClock } from "../utils/SimulatedClock.js"
+import { pool } from "../config/database.js"
 
 export class SimulationService {
   private simulationRunning = false
@@ -13,6 +14,20 @@ export class SimulationService {
     private manufacturingService: ManufacturingService,
   ) {}
 
+   private async cleanSimulationData(): Promise<void> {
+    const client = await pool.connect()
+    try {
+      console.log("Cleaning simulation data...")
+      await client.query("CALL clear_all_except_status_and_phones()")
+      console.log(" Simulation data cleaned successfully")
+    } catch (error) {
+      console.error("Error cleaning simulation data:", error)
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
   async startSimulation(): Promise<SimulationResponse> {
     if (this.simulationRunning) {
       return {
@@ -23,6 +38,8 @@ export class SimulationService {
     }
 
     try {
+      await this.cleanSimulationData();
+
       // TEMPORARY: Mock the external API call for testing
       console.log("TESTING MODE: Using mock epoch time instead of external API...")
 
