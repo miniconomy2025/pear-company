@@ -31,7 +31,7 @@ export async function getScreens(): Promise<ScreensPriceResponse | undefined> {
   }
 }
 
-export async function createOrder(quantity: number): Promise<ScreensCreateOrderResponse | undefined> {
+export async function createScreenOrder(quantity: number): Promise<ScreensCreateOrderResponse | undefined> {
   try {
     const res = await client.post("/order", { quantity });
     return res.data;
