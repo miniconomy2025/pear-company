@@ -9,7 +9,7 @@
     "build": "npm run clean && npx tsc",
     "build-linux": "npm run clean && npx tsc",
     "dev": "nodemon --exec node --loader ts-node/esm src/index.ts",
-    "start": "node dist/index.js",
+    "start": "npm run build && node dist/index.js",
     "db:test": "node --loader ts-node/esm src/scripts/testConnection.ts"
   },
   "author": "",

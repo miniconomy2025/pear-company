@@ -196,17 +196,21 @@ export class OrderService {
     }
   }
 
-  async cleanupExpiredReservations(): Promise<void> {
+  async cleanupExpiredReservations(currentSimulatedDate: Date): Promise<void> {
     const client = await pool.connect();
     try {
+      const cutoffTime = new Date(currentSimulatedDate.getTime() - 24 * 60 * 60 * 1000);
+
       const res = await client.query<{ order_id: number }>(`
         SELECT o.order_id
           FROM orders o
           JOIN status s
             ON o.status = s.status_id
          WHERE s.description = 'reserved'
-           AND o.created_at < NOW() - INTERVAL '24 hours'
-      `);
+           AND o.created_at < $1`
+           ,
+        [cutoffTime]
+    );
 
       for (const { order_id } of res.rows) {
         const cancelled = await this.cancelOrder(order_id);
