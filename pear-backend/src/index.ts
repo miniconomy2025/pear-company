@@ -81,7 +81,6 @@ container.register("OrderService", () => new OrderService(), true)
 container.register("PaymentService", () => new PaymentService(), true)
 container.register("BankingService", () => new BankingService(), true)
 container.register("MachinePurchasingService", () => new MachinePurchasingService(), true)
-container.register("LogisticsService", () => new LogisticsService(), true)
 container.register("ManufacturingService", () => new ManufacturingService(), true)
 container.register(
   "SimulationService",
@@ -91,6 +90,14 @@ container.register(
     const bankingService = container.resolve<BankingService>("BankingService")
     const machinePurchasingService = container.resolve<MachinePurchasingService>("MachinePurchasingService")
     return new SimulationService(orderService, manufacturingService, bankingService, machinePurchasingService)
+  },
+  true,
+)
+container.register(
+  "LogisticsService",
+  () => {
+    const machinePurchasingService = container.resolve<MachinePurchasingService>("MachinePurchasingService")
+    return new LogisticsService(machinePurchasingService)
   },
   true,
 )

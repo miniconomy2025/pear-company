@@ -47,7 +47,7 @@ export class LogisticsController {
   getConsumerDeliveries = async (req: Request, res: Response) => {
     try {
       const consumerDeliveries =
-        await this.logisticsService.getConsumerDeliveries();
+        await this.logisticsService.getConsumerPendingDeliveries();
       res.json(consumerDeliveries);
     } catch (error) {
       console.error("Error fetching consumer deliveries:", error);

@@ -2,8 +2,10 @@ import { pool } from "../config/database.js"
 import { purchaseMachine, confirmMachinePayment } from "../externalAPIs/SimulationAPIs.js"
 import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js"
 import type { SimulationBuyMachineResponse } from "../types/extenalApis.js"
+import { MachineLogisticsService } from "./MachineLogisticsService.js"
 
 export class MachinePurchasingService {
+  private machineLogistics: MachineLogisticsService
   private readonly MACHINE_CONFIGS = [
     { machineName: "ephone_machine", phoneModel: "ePhone", phoneId: 1, priority: 1 },
     { machineName: "ephone_plus_machine", phoneModel: "ePhone plus", phoneId: 2, priority: 2 },
@@ -13,6 +15,9 @@ export class MachinePurchasingService {
   private readonly EXPANSION_THRESHOLD = 1000000
   private readonly SAFETY_BUFFER = 200000
 
+  constructor() {
+    this.machineLogistics = new MachineLogisticsService()
+  }
 
   async initializeMachines(): Promise<void> {
 
@@ -155,7 +160,7 @@ export class MachinePurchasingService {
       console.log(`Order placed: ID ${orderResponse.orderId}, Total: $${orderResponse.totalPrice}`)
 
       // Step 2: Store order in database
-      await this.storeMachineOrder(orderResponse, phoneId)
+      const machineOrderId = await this.storeMachineOrder(orderResponse, phoneId)
 
       // Step 3: Make payment via Commercial Bank
       const paymentResponse = await createTransaction({
@@ -183,27 +188,30 @@ export class MachinePurchasingService {
 
 
       // Step 6: Update our database with completed machine
-      await this.completeMachineOrder(orderResponse.orderId, confirmResponse)
+      const pickupSuccess = await this.machineLogistics.arrangePickup(orderResponse, machineOrderId)
+
+      if (!pickupSuccess) {
+        console.warn(`Pickup arrangement failed for order ${orderResponse.orderId}, but machine is paid for`)
+        return true
+      }
 
       return true
     } catch (error) {
-      console.error(`❌ Machine purchase failed:`, error)
+      console.error(`Machine purchase failed:`, error)
       return false
     }
   }
 
-  /**
-   * Store machine order in database
-   */
-  private async storeMachineOrder(orderResponse: SimulationBuyMachineResponse, phoneId: number): Promise<void> {
+  private async storeMachineOrder(orderResponse: SimulationBuyMachineResponse, phoneId: number): Promise<number> {
     const client = await pool.connect()
     try {
-      await client.query(
+      const result = await client.query(
         `
         INSERT INTO machine_purchases (
           phone_id, machines_purchased, total_cost, weight_per_machine, 
           rate_per_day, status, ratio, reference_number
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING machine_purchase_id
       `,
         [
           phoneId,
@@ -217,7 +225,8 @@ export class MachinePurchasingService {
         ],
       )
 
-      console.log(`📝 Machine order stored in database`)
+      const machineOrderId = result.rows[0].machine_purchase_id
+      return machineOrderId
     } catch (error) {
       console.error("Error storing machine order:", error)
       throw error
@@ -246,57 +255,8 @@ export class MachinePurchasingService {
     }
   }
 
-  private async completeMachineOrder(orderId: number, confirmResponse: any): Promise<void> {
-    const client = await pool.connect()
-    try {
-      await client.query("BEGIN")
-
-      await client.query(
-        `
-        UPDATE machine_purchases 
-        SET status = (SELECT status_id FROM status WHERE description = 'Completed')
-        WHERE reference_number = $1
-      `,
-        [orderId],
-      )
-
-      const purchaseResult = await client.query(
-        `
-        SELECT mp.*, p.model as phone_model
-        FROM machine_purchases mp
-        JOIN phones p ON mp.phone_id = p.phone_id
-        WHERE mp.reference_number = $1
-      `,
-        [orderId],
-      )
-
-      if (purchaseResult.rows.length > 0) {
-        const purchase = purchaseResult.rows[0]
-
-        for (let i = 0; i < purchase.machines_purchased; i++) {
-          await client.query(
-            `
-            INSERT INTO machines (phone_id, rate_per_day, cost, date_acquired)
-            VALUES ($1, $2, $3, NOW())
-          `,
-            [
-              purchase.phone_id,
-              purchase.rate_per_day,
-              purchase.total_cost / purchase.machines_purchased,
-            ],
-          )
-        }
-
-      }
-
-      await client.query("COMMIT")
-    } catch (error) {
-      await client.query("ROLLBACK")
-      console.error("Error completing machine order:", error)
-      throw error
-    } finally {
-      client.release()
-    }
+  async confirmMachineDelivery(deliveryReference: number): Promise<boolean> {
+    return await this.machineLogistics.confirmMachineDelivery(deliveryReference)
   }
 
   private async assessBasicMachineExpansionNeeds(): Promise<
@@ -369,6 +329,14 @@ export class MachinePurchasingService {
     } finally {
       client.release()
     }
+  }
+
+  async getPendingMachineDeliveries(): Promise<any[]> {
+    return await this.machineLogistics.getPendingMachineDeliveries()
+  }
+
+  async getMachineDeliveryStats(): Promise<any> {
+    return await this.machineLogistics.getMachineDeliveryStats()
   }
 
   getExpansionThresholds(): { expansionThreshold: number; safetyBuffer: number } {
