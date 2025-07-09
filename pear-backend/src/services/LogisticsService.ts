@@ -102,26 +102,19 @@ export class LogisticsService {
 
   getBulkDeliveries = async () => {
     const query = `
-      SELECT 
-        p.name AS part,
-        SUM(ppi.quantity) AS quantity,
-        SUM(bd.cost) AS cost
-      FROM 
-        bulk_deliveries bd
-      JOIN parts_purchases pp ON bd.parts_purchase_id = pp.parts_purchase_id
-      JOIN parts_purchases_items ppi ON ppi.parts_purchase_id = pp.parts_purchase_id
-      JOIN parts_supplier ps ON ppi.part_supplier_id = ps.parts_supplier_id
-      JOIN parts p ON ps.part_id = p.part_id
-      GROUP BY 
-        p.name
-      ORDER BY 
-        p.name;
-
-    `;
-
-    const result = await pool.query(query);
-    return result.rows;
-  };
+    SELECT 
+      p.name AS part,
+      SUM(pp.quantity) AS quantity,
+      SUM(bd.cost) AS cost
+    FROM bulk_deliveries bd
+    JOIN parts_purchases pp ON bd.parts_purchase_id = pp.parts_purchase_id
+    JOIN parts p ON pp.part_id = p.part_id
+    GROUP BY p.name
+    ORDER BY p.name;
+    `
+    const result = await pool.query(query)
+    return result.rows
+  }
 
   getConsumerDeliveries = async () => {
     const query = `
@@ -154,9 +147,7 @@ export class LogisticsService {
     JOIN orders o ON o.order_id = cd.order_id
     JOIN order_items oi ON oi.order_id = o.order_id
     JOIN phones p ON p.phone_id = oi.phone_id
-    WHERE cd.status = (
-      SELECT status_id FROM status WHERE description = 'Pending'
-    )
+    WHERE cd.units_collected = 0
     GROUP BY p.model
     ORDER BY p.model;
   `;

@@ -2,11 +2,11 @@ import {pool} from "../config/database.js";
 
 export class ManufacturingService {
   
-    async phoneManufacturing(phoneId: number, quantity: number): Promise<void> {
+    async phoneManufacturing(phoneId: number, quantity: number, simulatedDate: Date): Promise<void> {
         const client = await pool.connect();
         try {
             await client.query("BEGIN");
-            const simTime = new Date().toISOString();
+            const simTime = simulatedDate.toISOString();
 
             const machinesRes = await client.query<{
                 machine_id: number;
@@ -139,13 +139,13 @@ export class ManufacturingService {
         }
     }
 
-    async processManufacturing(): Promise<void> {
+    async processManufacturing(simulatedDate: Date): Promise<void> {
         try {
             const phoneDemand = await this.calculatePhoneDemand();
             phoneDemand.sort((a, b) => a.stockNeeded - b.stockNeeded);
 
             for (const { phone_id, demand } of phoneDemand) {
-                await this.phoneManufacturing(phone_id, demand);
+                await this.phoneManufacturing(phone_id, demand, simulatedDate);
             }
         } catch (error) {
             console.error("Error manufacturing goods:", error);

@@ -1,8 +1,15 @@
 import axios from "axios";
-import type { SimulationTimeResponse, SimulationBuyMachineResponse, SimulationMachineResponse } from "../types/extenalApis.js";
+import type { 
+  SimulationTimeResponse,
+  SimulationBuyMachineResponse,
+  SimulationMachineResponse,
+  SimulationOrderPaymentResponse
+ } from "../types/extenalApis.js";
+
+const SIMULATION_API_BASE_URL = process.env.SIMULATION_API_BASE_URL
 
 const client = axios.create({
-  baseURL: "http://localhost:3000", 
+  baseURL: SIMULATION_API_BASE_URL, 
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
 });
@@ -20,9 +27,9 @@ function handleError(err: unknown) {
   }
 }
 
-export async function getUnixEpochStartTime(): Promise<string | undefined> {
+export async function getUnixEpochStartTime(): Promise<{ unixEpochStartTime: string} | undefined> {
   try {
-    const res = await client.get("/simulation/unix-epoch-start-time");
+    const res = await client.get("/unix-epoch-start-time");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -31,7 +38,7 @@ export async function getUnixEpochStartTime(): Promise<string | undefined> {
 
 export async function getCurrentSimulationTime(): Promise<SimulationTimeResponse | undefined> {
   try {
-    const res = await client.get("/simulation/current-simulation-time");
+    const res = await client.get("/current-simulation-time");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -40,7 +47,7 @@ export async function getCurrentSimulationTime(): Promise<SimulationTimeResponse
 
 export async function purchaseMachine(machineName: string, quantity: number): Promise<SimulationBuyMachineResponse | undefined> {
   try {
-    const res = await client.post("/simulation/purchase-machine", {
+    const res = await client.post("/machines", {
       machineName,
       quantity,
     });
@@ -50,11 +57,13 @@ export async function purchaseMachine(machineName: string, quantity: number): Pr
   }
 }
 
-export async function getMachines(): Promise<SimulationMachineResponse | undefined> {
+export async function confirmMachinePayment(orderId: number): Promise<SimulationOrderPaymentResponse | undefined> {
   try {
-    const res = await client.get("/simulation/machines");
-    return res.data;
+    const res = await client.post("/orders/payments", {
+      orderId,
+    })
+    return res.data
   } catch (err) {
-    handleError(err);
+    handleError(err)
   }
 }

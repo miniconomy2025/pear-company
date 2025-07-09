@@ -127,17 +127,31 @@ export interface SimulationTimeResponse {
 export interface SimulationBuyMachineResponse {
   orderId: number,
   machineName: string,
+  totalPrice: number,
+  unitWeight: number,
+  totalWeight: number,
   quantity: number,
-  price: number,
-  weight: number,
   machineDetails: {
     requiredMaterials: string,
-    materialRatio: string,
+    inputRatio: {[key: string]: number},
     productionRate: number
   },
   bankAccount: string
 }
 
+export interface SimulationOrderPaymentRequest {
+  orderId: number
+}
+
+export interface SimulationOrderPaymentResponse {
+  orderId: number
+  itemName: string
+  quantity: number
+  totalPrice: number
+  status: string
+  message: string
+  canFulfill: boolean
+}
 export interface MachineItem {
   machineName: string,
   quantity: number,
@@ -214,5 +228,9 @@ export interface CommercialBankLoanDetailsResponse {
   started_at: number,
   write_off: boolean,
   payments: [LoanPayments]
+}
+
+export interface CommercialBankAccountResponse {
+  account_number: string
 }
 

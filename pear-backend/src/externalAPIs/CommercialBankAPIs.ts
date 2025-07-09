@@ -1,10 +1,13 @@
 import axios from "axios";
 import type { CommercialBankLoansResponse, CommercialBankTransationRequest, CommercialBankTransationResponse, 
   CommercialBankTransationItemResponse, CommercialBankTakeLoanResponse, CommercialBankLoanListResponse,
-  CommercialBankLoanPayResponse, CommercialBankLoanDetailsResponse } from "../types/extenalApis.js";
+  CommercialBankLoanPayResponse, CommercialBankLoanDetailsResponse, 
+  CommercialBankAccountResponse} from "../types/extenalApis.js";
+
+const COMMERCIAL_BANK_BASE_URL = process.env.COMMERCIAL_BANK_BASE_URL
 
 const client = axios.create({
-  baseURL: "https://localhost:8080",
+  baseURL: COMMERCIAL_BANK_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
 });
@@ -22,7 +25,7 @@ function handleError(err: unknown) {
   }
 }
 
-export async function createAccount(): Promise<string | undefined> {
+export async function createAccount(): Promise<CommercialBankAccountResponse | undefined> {
   try {
     const res = await client.post("/account", {});
     return res.data;
