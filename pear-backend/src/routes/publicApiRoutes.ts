@@ -27,7 +27,6 @@ export const createPublicApiRoutes = (): Router => {
 
   // Simulation control endpoints
   router.post("/simulation/start", simulationController.startSimulation)
-  router.post("/simulation/tick", simulationController.processSimulationTick)
 
   return router
 }
