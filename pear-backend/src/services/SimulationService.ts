@@ -4,6 +4,7 @@ import type { ManufacturingService } from "./ManufacturingService.js"
 import { SimulatedClock } from "../utils/SimulatedClock.js"
 import { pool } from "../config/database.js"
 import type { BankingService } from "../services/BankingService.js"
+import type { MachinePurchasingService } from "./MachinePurchasingService.js"
 
 export class SimulationService {
   private simulationRunning = false
@@ -14,6 +15,7 @@ export class SimulationService {
     private orderService: OrderService,
     private manufacturingService: ManufacturingService,
     private bankingService: BankingService,
+    private machinePurchasingService: MachinePurchasingService,
   ) {}
 
    private async cleanSimulationData(): Promise<void> {
@@ -70,7 +72,10 @@ export class SimulationService {
       this.startAutoTick()
       console.log("Simulation started with automatic daily ticking every 2 minutes.")
 
-      this.bankingService.initializeBanking()
+      await this.bankingService.initializeBanking()
+
+      await this.machinePurchasingService.initializeMachines()
+
       return {
         message: "Simulation started successfully with automatic daily ticking",
         tick: SimulatedClock.getCurrentSimulatedDayOffset(),
@@ -122,7 +127,9 @@ export class SimulationService {
     console.log(`Simulated Date: ${simDate} (Day ${dayOffset})`)
     console.log(`Processing simulated day: ${simDate}`)
 
-    await this.bankingService.performDailyBalanceCheck(currentSimulatedDate)
+    const currentBalance = await this.bankingService.performDailyBalanceCheck(currentSimulatedDate)
+
+    await this.machinePurchasingService.performDailyMachineExpansion(currentSimulatedDate, currentBalance)
 
     await this.manufacturingService.processManufacturing(currentSimulatedDate)
 

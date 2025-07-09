@@ -71,14 +71,14 @@ export class BankingService {
     }
   }
 
-  async performDailyBalanceCheck(simulatedDate: Date): Promise<void> {
+  async performDailyBalanceCheck(simulatedDate: Date): Promise<number> {
     try {
       const currentBalance = await this.getCurrentBalance()
       const simDateStr = simulatedDate.toISOString().split("T")[0]
 
       if (currentBalance === undefined) {
         console.warn(`Could not retrieve balance for ${simDateStr}`)
-        return
+        return 0
       }
 
       console.log(`Daily Balance Check (${simDateStr}): $${currentBalance.toLocaleString()}`)
@@ -92,14 +92,18 @@ export class BankingService {
         if (loanNumber) {
           await this.logEmergencyLoan(loanNumber, this.LOAN_AMOUNT, simulatedDate)
           console.log(`Emergency loan secured: ${loanNumber}`)
+          return currentBalance + this.LOAN_AMOUNT
         } else {
           console.error(`Failed to secure emergency loan on ${simDateStr}`)
+          return currentBalance
         }
       } else {
         console.log(`Balance is healthy (above $${this.MINIMUM_BALANCE.toLocaleString()})`)
+        return currentBalance
       }
     } catch (error) {
       console.error("Error during daily balance check:", error)
+      return 0
     }
   }
 
