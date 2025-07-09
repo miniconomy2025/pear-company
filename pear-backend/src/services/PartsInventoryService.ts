@@ -28,7 +28,7 @@ export class PartsInventoryService {
     return levels;
   }
 
-  async checkAndOrderLowStock(): Promise<void> {
+  async checkAndOrderLowStock(simulatedDate: Date): Promise<void> {
     const levels = await this.getPartLevels();
 
     for (const part of ["screens", "cases", "electronics"]) {
@@ -36,15 +36,18 @@ export class PartsInventoryService {
       if (currentLevel < THRESHOLDS[part]) {
         const amountToOrder = THRESHOLDS[part] - currentLevel;
         console.log(`Stock low for ${part}: ${currentLevel}. Ordering ${amountToOrder}.`);
-        await this.orderPart(part, amountToOrder);
+        await this.orderPart(part, amountToOrder, simulatedDate);
       } else {
         console.log(`${part} stock sufficient: ${currentLevel}`);
       }
     }
   }
 
-  private async orderPart(part: string, quantity: number): Promise<void> {
+  private async orderPart(part: string, quantity: number, simulatedDate: Date): Promise<void> {
     try {
+      const client = await pool.connect();
+      const simTime = simulatedDate.toISOString();
+
       let order;
       switch (part) {
         case "screens": {
@@ -92,30 +95,30 @@ export class PartsInventoryService {
       }
       await createTransaction(order);
 
-      const partRes = await pool.query<{ part_id: number }>(
+      const partRes = await client.query<{ part_id: number }>(
         `SELECT part_id FROM parts WHERE name = $1`,
         [part]
       );
       const partId = partRes.rows[0].part_id;
       
-      const refRes = await pool.query<{ nextval: number }>(
+      const refRes = await client.query<{ nextval: number }>(
         `SELECT nextval('parts_purchases_reference_number_seq') AS nextval`
       );
       const referenceNumber = refRes.rows[0].nextval;
 
-      const statusRes = await pool.query<{ status_id: number }>(
+      const statusRes = await client.query<{ status_id: number }>(
         `SELECT status_id FROM status WHERE description = 'pending'`
       );
       const statusId = statusRes.rows[0].status_id;
 
-      const purchaseRes = await pool.query<{ parts_purchase_id: number }>(
+      const purchaseRes = await client.query<{ parts_purchase_id: number }>(
         `
         INSERT INTO parts_purchases
           (reference_number, cost, status, purchased_at, account_number, part_id, quantity)
         VALUES
-          ($1, $2, $3, NOW(), $4, $5, $6)
+          ($1, $2, $3, $4, $5, $6, $7)
         RETURNING parts_purchase_id`,
-        [referenceNumber, order.amount, statusId, order.to_account_number, partId, quantity]
+        [referenceNumber, order.amount, statusId, order.to_account_number, partId, quantity, simTime]
       );
       const partsPurchaseId = purchaseRes.rows[0].parts_purchase_id;
 

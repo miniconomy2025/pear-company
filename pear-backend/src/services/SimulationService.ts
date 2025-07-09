@@ -17,6 +17,7 @@ export class SimulationService {
     private manufacturingService: ManufacturingService,
     private bankingService: BankingService,
     private machinePurchasingService: MachinePurchasingService,
+    private partsInventoryService: PartsInventoryService,
   ) {}
 
    private async cleanSimulationData(): Promise<void> {
@@ -135,6 +136,8 @@ export class SimulationService {
     await this.manufacturingService.processManufacturing(currentSimulatedDate);
 
     await this.orderService.cleanupExpiredReservations(currentSimulatedDate)
+
+    await this.partsInventoryService.checkAndOrderLowStock(currentSimulatedDate)
 
     console.log(`Simulation tick (day ${dayOffset}) processed for ${simDate}`)
     console.log(`---`)
