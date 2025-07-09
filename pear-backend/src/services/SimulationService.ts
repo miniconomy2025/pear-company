@@ -3,6 +3,7 @@ import type { OrderService } from "./OrderService.js"
 import type { ManufacturingService } from "./ManufacturingService.js"
 import { SimulatedClock } from "../utils/SimulatedClock.js"
 import { pool } from "../config/database.js"
+import type { BankingService } from "../services/BankingService.js"
 
 export class SimulationService {
   private simulationRunning = false
@@ -12,6 +13,7 @@ export class SimulationService {
   constructor(
     private orderService: OrderService,
     private manufacturingService: ManufacturingService,
+    private bankingService: BankingService,
   ) {}
 
    private async cleanSimulationData(): Promise<void> {
@@ -49,13 +51,13 @@ export class SimulationService {
 
       /* COMMENTED OUT FOR TESTING - UNCOMMENT WHEN EXTERNAL API IS READY
       console.log("Fetching simulation start time from external Simulation API...")
-      const thohEpochStartStr = await getUnixEpochStartTime()
+      const thohResponse = await getUnixEpochStartTime()
 
-      if (!thohEpochStartStr) {
+      if (!thohResponse || !thohResponse.unixEpochStartTime) {
         throw new Error("Did not receive a valid epoch start time from Simulation API.")
       }
 
-      const thohEpochStartMs = Number.parseInt(thohEpochStartStr, 10)
+      const thohEpochStartMs = Number.parseInt(thohResponse.unixEpochStartTime, 10)
       if (isNaN(thohEpochStartMs)) {
         throw new Error("Invalid epoch time received from Simulation API (not a number).")
       }
@@ -68,6 +70,7 @@ export class SimulationService {
       this.startAutoTick()
       console.log("Simulation started with automatic daily ticking every 2 minutes.")
 
+      this.bankingService.initializeBanking()
       return {
         message: "Simulation started successfully with automatic daily ticking",
         tick: SimulatedClock.getCurrentSimulatedDayOffset(),
@@ -118,6 +121,8 @@ export class SimulationService {
     console.log(`TICK at ${realTime}`)
     console.log(`Simulated Date: ${simDate} (Day ${dayOffset})`)
     console.log(`Processing simulated day: ${simDate}`)
+
+    await this.bankingService.performDailyBalanceCheck(currentSimulatedDate)
 
     await this.manufacturingService.processManufacturing(currentSimulatedDate)
 

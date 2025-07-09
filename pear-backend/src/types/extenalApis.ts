@@ -217,3 +217,7 @@ export interface CommercialBankLoanDetailsResponse {
   payments: [LoanPayments]
 }
 
+export interface CommercialBankAccountResponse {
+  account_number: string
+}
+
