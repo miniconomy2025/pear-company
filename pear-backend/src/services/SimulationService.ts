@@ -5,8 +5,9 @@ import { SimulatedClock } from "../utils/SimulatedClock.js"
 import { pool } from "../config/database.js"
 
 export class SimulationService {
-  private currentTick = 0
   private simulationRunning = false
+  private tickTimer: NodeJS.Timeout | null = null
+  private readonly TICK_INTERVAL_MS = 2 * 60 * 1000
 
   constructor(
     private orderService: OrderService,
@@ -64,12 +65,39 @@ export class SimulationService {
 
       this.simulationRunning = true
 
-    console.log("Simulation started")
+      this.startAutoTick()
+      console.log("Simulation started with automatic daily ticking every 2 minutes.")
 
-    return {
-      message: "Simulation started successfully",
-      tick: this.currentTick,
-      status: "running",
+      return {
+        message: "Simulation started successfully with automatic daily ticking",
+        tick: SimulatedClock.getCurrentSimulatedDayOffset(),
+        status: "running",
+      }
+    } catch (error) {
+      console.error("Error starting simulation:", error)
+      throw new Error(`Failed to start simulation: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  }
+
+  private startAutoTick(): void {
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer)
+    }
+
+    this.tickTimer = setInterval(async () => {
+      try {
+        await this.processSimulationTick()
+      } catch (error) {
+        console.error("Error during automatic simulation tick:", error)
+      }
+    }, this.TICK_INTERVAL_MS)
+  }
+
+  private stopAutoTick(): void {
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer)
+      this.tickTimer = null
+      console.log("⏹️ Automatic tick timer stopped")
     }
   }
 
@@ -78,31 +106,44 @@ export class SimulationService {
       throw new Error("Simulation is not running. Start simulation first.")
     }
 
-    this.currentTick++ 
+    SimulatedClock.advanceDay()
+    const currentSimulatedDate = SimulatedClock.getSimulatedDate()
+    const currentSimulatedEndOfDay = SimulatedClock.getSimulatedEndOfDay()
 
-    // Process manufacturing (machines produce phones)
-    await this.manufacturingService.processManufacturing();
+    // Enhanced logging for testing
+    const realTime = new Date().toISOString()
+    const simDate = currentSimulatedDate.toISOString().split("T")[0]
+    const dayOffset = SimulatedClock.getCurrentSimulatedDayOffset()
 
-    // Clean up expired reservations
-    this.orderService.cleanupExpiredReservations()
+    console.log(`TICK at ${realTime}`)
+    console.log(`Simulated Date: ${simDate} (Day ${dayOffset})`)
+    console.log(`Processing simulated day: ${simDate}`)
 
-    // TODO: Process delivery statuses
-    // TODO: Process any scheduled events
+    await this.manufacturingService.processManufacturing(currentSimulatedDate)
 
-    console.log(`Simulation tick ${this.currentTick} processed`)
+    await this.orderService.cleanupExpiredReservations(currentSimulatedDate)
+
+    console.log(`Simulation tick (day ${dayOffset}) processed for ${simDate}`)
+    console.log(`---`)
 
     return {
-      message: `Simulation tick ${this.currentTick} processed`,
-      tick: this.currentTick,
+      message: `Simulation tick (day ${dayOffset}) processed`,
+      tick: dayOffset,
       status: "running",
     }
   }
 
   getCurrentTick(): number {
-    return this.currentTick
+    return SimulatedClock.getCurrentSimulatedDayOffset()
   }
 
   isRunning(): boolean {
     return this.simulationRunning
+  }
+
+  cleanup(): void {
+    this.stopAutoTick()
+    this.simulationRunning = false
+    console.log("SimulationService cleanup completed")
   }
 }

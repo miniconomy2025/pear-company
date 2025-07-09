@@ -1,8 +1,10 @@
 import axios from "axios";
 import type { SimulationTimeResponse, SimulationBuyMachineResponse, SimulationMachineResponse } from "../types/extenalApis.js";
 
+const SIMULATION_API_BASE_URL = process.env.SIMULATION_API_BASE_URL
+
 const client = axios.create({
-  baseURL: "http://localhost:3000", 
+  baseURL: SIMULATION_API_BASE_URL, 
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
 });
