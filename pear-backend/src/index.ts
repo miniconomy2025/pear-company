@@ -8,6 +8,7 @@ import { PaymentService } from "./services/PaymentService.js"
 import { LogisticsService } from "./services/LogisticsService.js"
 import { SimulationService } from "./services/SimulationService.js"
 import { ManufacturingService } from "./services/ManufacturingService.js"
+import { MachinePurchasingService } from "./services/MachinePurchasingService.js"
 import { StockController } from "./controllers/StockController.js"
 import { OrderController } from "./controllers/OrderController.js"
 import { LogisticsController } from "./controllers/LogisticsController.js"
@@ -79,6 +80,7 @@ container.register("StockService", () => new StockService(), true)
 container.register("OrderService", () => new OrderService(), true)
 container.register("PaymentService", () => new PaymentService(), true)
 container.register("BankingService", () => new BankingService(), true)
+container.register("MachinePurchasingService", () => new MachinePurchasingService(), true)
 container.register("LogisticsService", () => new LogisticsService(), true)
 container.register("ManufacturingService", () => new ManufacturingService(), true)
 container.register(
@@ -87,7 +89,8 @@ container.register(
     const orderService = container.resolve<OrderService>("OrderService")
     const manufacturingService = container.resolve<ManufacturingService>("ManufacturingService")
     const bankingService = container.resolve<BankingService>("BankingService")
-    return new SimulationService(orderService, manufacturingService, bankingService)
+    const machinePurchasingService = container.resolve<MachinePurchasingService>("MachinePurchasingService")
+    return new SimulationService(orderService, manufacturingService, bankingService, machinePurchasingService)
   },
   true,
 )
