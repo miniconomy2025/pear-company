@@ -1,13 +1,14 @@
 import type { SimulationResponse } from "../types/publicApi.js"
 import type { OrderService } from "./OrderService.js"
 import type { ManufacturingService } from "./ManufacturingService.js"
-import {pool} from "../config/database.js";
+import { PartsInventoryService } from "./PartsInventoryService.js";
 
 export class SimulationService {
   private currentTick = 0
   private simulationRunning = false
 
   constructor(private orderService: OrderService, private manufacturingService: ManufacturingService) {}
+  private partsService = new PartsInventoryService();
 
   async startSimulation(): Promise<SimulationResponse> {
     this.simulationRunning = true
@@ -29,11 +30,11 @@ export class SimulationService {
 
     this.currentTick++ 
 
-    // Process manufacturing (machines produce phones)
     await this.manufacturingService.processManufacturing();
 
-    // Clean up expired reservations
-    this.orderService.cleanupExpiredReservations()
+    await this.partsService.checkAndOrderLowStock();
+
+    await this.orderService.cleanupExpiredReservations();
 
     // TODO: Process delivery statuses
     // TODO: Process any scheduled events

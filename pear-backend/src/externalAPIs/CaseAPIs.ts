@@ -31,7 +31,7 @@ export async function getCases(): Promise<CasesPriceResponse | undefined> {
   }
 }
 
-export async function createOrder(quantity: number): Promise<CasesCreateOrderResponse | undefined> {
+export async function createCaseOrder(quantity: number): Promise<CasesCreateOrderResponse | undefined> {
   try {
     const res = await client.post("/orders", { quantity });
     return res.data;

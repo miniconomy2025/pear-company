@@ -63,4 +63,15 @@ export class PaymentService {
     }
     // TODO: Create consumer delivery record
   }
+
+  async getAccountNumber(): Promise<string> {
+    const result = await pool.query(
+      `SELECT value FROM system_settings WHERE key = $1 LIMIT 1`,
+      ['accountNumber']
+    );
+    if (result.rows.length === 0) {
+      throw new Error('Account number not configured in system_settings.');
+    }
+    return result.rows[0].value;
+  }
 }
