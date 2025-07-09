@@ -22,6 +22,7 @@ import { ProductionService } from "./services/ProductionService.js"
 import { ProductionController } from "./controllers/ProductionController.js"
 import { createInternalApiRoutes } from "./routes/internalApiRoutes.js"
 import cors from "cors"
+import { BankingService } from "./services/BankingService.js"
 
 // Load environment variables from .env file
 dotenv.config()
@@ -39,7 +40,9 @@ app.use(loggingMiddleware)
 // Configure CORS
 const allowedOrigins = [
   "https://pear-company.projects.bbdgrad.com",
-  // "http://localhost:3000", // for local dev
+  "http://localhost:3000", // for local dev
+  "https://thoh-api.projects.bbdgrad.com",
+  "https://commercial-bank-api.projects.bbdgrad.com",
 ]
 
 app.use(
@@ -58,7 +61,6 @@ app.use(
   }),
 )
 
-// Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
@@ -76,14 +78,16 @@ app.get("/health", (req, res) => {
 container.register("StockService", () => new StockService(), true)
 container.register("OrderService", () => new OrderService(), true)
 container.register("PaymentService", () => new PaymentService(), true)
+container.register("BankingService", () => new BankingService(), true)
 container.register("LogisticsService", () => new LogisticsService(), true)
-container.register("ManufacturingService", () => new ManufacturingService(), true) // Added this missing registration
+container.register("ManufacturingService", () => new ManufacturingService(), true)
 container.register(
   "SimulationService",
   () => {
     const orderService = container.resolve<OrderService>("OrderService")
     const manufacturingService = container.resolve<ManufacturingService>("ManufacturingService")
-    return new SimulationService(orderService, manufacturingService)
+    const bankingService = container.resolve<BankingService>("BankingService")
+    return new SimulationService(orderService, manufacturingService, bankingService)
   },
   true,
 )
@@ -163,16 +167,6 @@ app.get("/", (req, res) => {
       health: "/health",
       internal: "/internal-api/*",
     },
-    available_phones: ["Pear Phone Basic", "Pear Phone Pro", "Pear Phone Max"],
-    patterns: [
-      "Repository Pattern",
-      "Service Layer Pattern",
-      "Dependency Injection Pattern",
-      "Controller Pattern",
-      "Router Pattern",
-      "Middleware Pattern",
-      "Single Responsibility Principle",
-    ],
   })
 })
 
