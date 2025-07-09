@@ -130,13 +130,9 @@ export class SimulationService {
 
     const currentBalance = await this.bankingService.performDailyBalanceCheck(currentSimulatedDate)
 
-    await this.manufacturingService.processManufacturing(currentSimulatedDate)
-
     await this.machinePurchasingService.performDailyMachineExpansion(currentSimulatedDate, currentBalance)
 
     await this.manufacturingService.processManufacturing(currentSimulatedDate);
-
-    this.orderService.cleanupExpiredReservations(currentSimulatedDate)
 
     await this.orderService.cleanupExpiredReservations(currentSimulatedDate)
 
