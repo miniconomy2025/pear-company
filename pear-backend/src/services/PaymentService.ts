@@ -1,5 +1,8 @@
 import type { PaymentNotification } from "../types/publicApi.js"
-import {pool} from "../config/database.js";
+import { pool } from "../config/database.js";
+import { LogisticsService } from "./LogisticsService.js";
+
+const logisticsService = new LogisticsService();
 
 export class PaymentService {
   async processPayment(payment: PaymentNotification): Promise<void> {
@@ -54,6 +57,8 @@ export class PaymentService {
         [payment.reference]
       );
 
+      await logisticsService.deliverGoods(payment.reference);
+
       await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK");
@@ -61,6 +66,16 @@ export class PaymentService {
     } finally {
       client.release();
     }
-    // TODO: Create consumer delivery record
+  }
+
+  async getAccountNumber(): Promise<string> {
+    const result = await pool.query(
+      `SELECT value FROM system_settings WHERE key = $1 LIMIT 1`,
+      ['accountNumber']
+    );
+    if (result.rows.length === 0) {
+      throw new Error('Account number not configured in system_settings.');
+    }
+    return result.rows[0].value;
   }
 }
