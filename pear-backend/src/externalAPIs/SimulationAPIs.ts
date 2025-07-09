@@ -22,7 +22,7 @@ function handleError(err: unknown) {
   }
 }
 
-export async function getUnixEpochStartTime(): Promise<string | undefined> {
+export async function getUnixEpochStartTime(): Promise<{ unixEpochStartTime: string} | undefined> {
   try {
     const res = await client.get("/simulation/unix-epoch-start-time");
     return res.data;
