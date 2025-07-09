@@ -1,8 +1,10 @@
 import axios from "axios";
 import type { BulkCreatePickUpRequest, BulkCreatePickUpResponse, BulkPickUpResponse } from "../types/extenalApis.js";
 
+const BULK_LOGISTICS_BASE_URL = process.env.BULK_LOGISTICS_BASE_URL
+
 const client = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: BULK_LOGISTICS_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
 });
@@ -20,19 +22,29 @@ function handleError(err: unknown) {
   }
 }
 
-export async function createPickupRequest(payload: BulkCreatePickUpRequest): Promise<BulkCreatePickUpResponse | undefined> {
+export async function createPickupRequest(request: BulkCreatePickUpRequest,): Promise<BulkCreatePickUpResponse | undefined> {
   try {
-    const res = await client.post("/pickup-request", payload);
-    return res.data;
+    const res = await client.post("/api/pickup-request", request);
+    if (res.status === 201) {
+      return res.data
+    }
+    else{
+      throw new Error(`Unexpected response status: ${res.status}`)
+    }
   } catch (err) {
     handleError(err);
   }
 }
 
-export async function getPickupRequest(id: number): Promise<BulkPickUpResponse | undefined> {
+export async function getPickupRequest(pickupRequestId: number): Promise<BulkPickUpResponse | undefined> {
   try {
-    const res = await client.get(`/pickup-request/${id}`);
-    return res.data;
+    const res = await client.get(`/api/pickup-request/${pickupRequestId}`);
+    if (res.status === 200) {
+      return res.data;
+    }
+    else {
+      throw new Error(`Unexpected response status: ${res.status}`)
+    }
   } catch (err) {
     handleError(err);
   }

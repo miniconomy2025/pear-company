@@ -337,6 +337,7 @@ jobs:
           PORT=5000
           SIMULATION_API_BASE_URL=https://thoh-api.projects.bbdgrad.com
           COMMERCIAL_BANK_BASE_URL=https://commercial-bank-api.projects.bbdgrad.com
+          BULK_LOGISTICS_BASE_URL=https://bulk-logistics-api.projects.bbdgrad.com
           EOF
           
           # Set proper permissions

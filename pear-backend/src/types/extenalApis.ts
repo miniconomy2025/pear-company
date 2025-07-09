@@ -97,7 +97,7 @@ export interface BulkCreatePickUpRequest {
   originalExternalOrderId: string,
   originCompanyId: string,
   destinationCompanyId: string,
-  items: [BulkItemRequest]
+  items: BulkItemRequest[]
 }
 
 export interface BulkCreatePickUpResponse {
@@ -116,7 +116,7 @@ export interface BulkPickUpResponse {
   originCompanyName: string,
   originalExternalOrderId: string,
   requestDate: string,
-  items: [BulkItemRequest]
+  items: BulkItemRequest[]
 }
 
 export interface SimulationTimeResponse {
