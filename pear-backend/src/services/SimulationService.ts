@@ -5,6 +5,7 @@ import { SimulatedClock } from "../utils/SimulatedClock.js"
 import { pool } from "../config/database.js"
 import type { BankingService } from "../services/BankingService.js"
 import type { MachinePurchasingService } from "./MachinePurchasingService.js"
+import { PartsInventoryService } from "./PartsInventoryService.js";
 
 export class SimulationService {
   private simulationRunning = false
@@ -16,6 +17,7 @@ export class SimulationService {
     private manufacturingService: ManufacturingService,
     private bankingService: BankingService,
     private machinePurchasingService: MachinePurchasingService,
+    private partsInventoryService: PartsInventoryService,
   ) {}
 
    private async cleanSimulationData(): Promise<void> {
@@ -69,12 +71,20 @@ export class SimulationService {
 
       this.simulationRunning = true
 
+      const currentSimulatedDate = SimulatedClock.getSimulatedDate()
+
       this.startAutoTick()
       console.log("Simulation started with automatic daily ticking every 2 minutes.")
 
       await this.bankingService.initializeBanking()
 
       await this.machinePurchasingService.initializeMachines()
+
+      await this.partsInventoryService.checkAndOrderLowStock(currentSimulatedDate)
+
+      await this.manufacturingService.processManufacturing(currentSimulatedDate)
+
+      await this.orderService.cleanupExpiredReservations(currentSimulatedDate)
 
       return {
         message: "Simulation started successfully with automatic daily ticking",
@@ -134,6 +144,8 @@ export class SimulationService {
     await this.manufacturingService.processManufacturing(currentSimulatedDate)
 
     await this.orderService.cleanupExpiredReservations(currentSimulatedDate)
+
+    await this.partsInventoryService.checkAndOrderLowStock(currentSimulatedDate)
 
     console.log(`Simulation tick (day ${dayOffset}) processed for ${simDate}`)
     console.log(`---`)

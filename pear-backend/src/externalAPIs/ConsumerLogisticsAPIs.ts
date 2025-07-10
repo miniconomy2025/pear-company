@@ -1,8 +1,10 @@
 import axios from "axios";
 import type { CustomersPickUpRequest, CustomersPickUpResponse, CustomersAllPickUpResponse, CustomersCompanyResponse } from "../types/extenalApis.js";
 
+const CUSTOMER_LOGISTICS_BASE_URL = process.env.CUSTOMER_LOGISTICS_BASE_URL
+
 const client = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: CUSTOMER_LOGISTICS_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
 });

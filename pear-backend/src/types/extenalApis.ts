@@ -75,6 +75,7 @@ export interface CustomersPickUpRequest {
 export interface CustomersPickUpResponse {
   refernceno: number,
   amount: number,
+  accountNumber: string
 }
 
 export interface CustomersAllPickUpResponse {
