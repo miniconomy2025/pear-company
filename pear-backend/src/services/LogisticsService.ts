@@ -1,6 +1,7 @@
-import type { DeliveryConfirmation } from "../types/publicApi.js"
-import { pool } from "../config/database.js"
+
 import type { MachinePurchasingService } from "./MachinePurchasingService.js"
+import type { DeliveryConfirmation } from "../types/publicApi.js";
+import {pool} from "../config/database.js";
 import { createPickup as createConsumerPickup } from "../externalAPIs/ConsumerLogisticsAPIs.js";
 import { createPickupRequest as createBulkPickup }     from "../externalAPIs/BulkLogisticsAPIs.js";
 import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js";
@@ -85,25 +86,12 @@ export class LogisticsService {
     return result.rows
   }
 
-  getConsumerDeliveries = async () => {
-    const query = `
-    SELECT 
-      ph.model,
-      SUM(oi.quantity) AS delivered,
-      SUM(cd.cost) AS cost
-    FROM 
-      consumer_deliveries cd
-    JOIN orders o ON cd.order_id = o.order_id
-    JOIN order_items oi ON o.order_id = oi.order_id
-    JOIN phones ph ON oi.phone_id = ph.phone_id
-    GROUP BY 
-      ph.model
-    ORDER BY 
-      ph.model;
-    `;
+  getMachineDeliveries = async () => {
+    return await this.machinePurchasingService.getPendingMachineDeliveries()
+  }
 
-    const result = await pool.query(query);
-    return result.rows;
+  getMachineDeliveryStats = async () => {
+    return await this.machinePurchasingService.getMachineDeliveryStats()
   };
 
   async deliverGoods(orderId: number): Promise<void> {
