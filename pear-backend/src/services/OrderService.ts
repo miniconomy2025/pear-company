@@ -1,10 +1,8 @@
 import type { PublicOrderRequest, PublicOrderResponse, OrderReservation } from "../types/publicApi.js";
 import {pool} from "../config/database.js";
 import { StockService } from "./StockService.js";
-import { PaymentService } from "./PaymentService.js";
 
 const stockService = new StockService();
-const paymentService = new PaymentService();
 
 export class OrderService {
   async createOrder(orderRequest: PublicOrderRequest): Promise<PublicOrderResponse> {
@@ -68,10 +66,8 @@ export class OrderService {
         );
       }
 
-      const yourAccountNumber = await paymentService.getAccountNumber();
-
       await client.query("COMMIT");
-      return { order_id: orderId, price: totalPrice, accountNumber: yourAccountNumber };
+      return { order_id: orderId, price: totalPrice };
     } catch (err) {
       await client.query("ROLLBACK");
       throw err;
