@@ -41,16 +41,17 @@ export class PartsInventoryService {
     }
   }
 
-  async requestBulkDelivery(partsPurchaseId: number, address: string): Promise<void> {
+  async requestBulkDelivery(partsPurchaseId: number, address: string, quantity: number): Promise<void> {
     try {
         const client = await pool.connect();
         const pickupRes = await createPickupRequest({
         originalExternalOrderId: partsPurchaseId.toString(),
         originCompanyId: `${address}-supplier`,
         destinationCompanyId: "pear-company",
-        items: [
-            { description: `delivery for #${address}`}
-        ]
+        items: [{
+            itemName: address,
+            quantity: quantity
+          }]
         });
         console.log(`External pickup created:`, pickupRes);
 
@@ -173,7 +174,7 @@ export class PartsInventoryService {
       );
       const partsPurchaseId = purchaseRes.rows[0].parts_purchase_id;
 
-      await this.requestBulkDelivery(partsPurchaseId, part);
+      await this.requestBulkDelivery(partsPurchaseId, part, quantity);
     } catch (err) {
       console.error(`Failed to order ${part}:`, err);
     }
