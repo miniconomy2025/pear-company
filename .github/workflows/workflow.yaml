@@ -341,13 +341,24 @@ jobs:
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
           
+          # Extract DB host without port
+          DB_HOST_RAW="${{ needs.terraform.outputs.dbhost }}"
+          if [[ "$DB_HOST_RAW" == *":"* ]]; then
+            DB_HOST_CLEAN="${DB_HOST_RAW%:*}"
+          else
+            DB_HOST_CLEAN="$DB_HOST_RAW"
+          fi
+          
+          echo "DB Host cleaned: $DB_HOST_CLEAN"
+          
           # Create .env file securely without logging sensitive data
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << 'ENVEOF'
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << ENVEOF
           echo "Creating secure environment file..."
-          cat > /home/ubuntu/.env << 'EOF'
+          cat > /home/ubuntu/.env << EOF
           DB_USER=${{ env.POSTGRES_USER }}
           DB_PASSWORD=${{ env.POSTGRES_PASS }}
-          DB_HOST=${{ needs.terraform.outputs.dbhost }}
+          DB_HOST=$DB_HOST_CLEAN
+          DB_PORT=5432
           DB_NAME=peardb
           NODE_ENV=production
           PORT=5000
