@@ -451,7 +451,7 @@ jobs:
               }
 
               location / {
-                  proxy_pass http://localhost:3000;
+                  proxy_pass http://localhost:5000;
               }
           }
 
@@ -464,7 +464,7 @@ jobs:
               ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
 
               location / {
-                  proxy_pass http://localhost:3000;
+                  proxy_pass http://localhost:5000;
               }
           }
           EOF_NGINX
