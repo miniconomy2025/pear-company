@@ -1,8 +1,10 @@
 import type { PublicOrderRequest, PublicOrderResponse, OrderReservation } from "../types/publicApi.js";
 import {pool} from "../config/database.js";
 import { StockService } from "./StockService.js";
+import { PaymentService } from "./PaymentService.js";
 
 const stockService = new StockService();
+const paymentService = new PaymentService();
 
 export class OrderService {
   async createOrder(orderRequest: PublicOrderRequest): Promise<PublicOrderResponse> {
@@ -24,9 +26,9 @@ export class OrderService {
       const statusRes = await client.query<{ status_id: number }>(
         `SELECT status_id 
            FROM status 
-          WHERE description = 'reserved'`
+          WHERE description = 'Pending'`
       );
-      if (statusRes.rowCount === 0) throw new Error(`"reserved" status not found.`);
+      if (statusRes.rowCount === 0) throw new Error(`"Pending" status not found.`);
       const reservedStatusId = statusRes.rows[0].status_id;
 
       let totalPrice = 0;
@@ -65,9 +67,10 @@ export class OrderService {
           [orderId, phone_id, quantity]
         );
       }
+      const yourAccountNumber = await paymentService.getAccountNumber();
 
       await client.query("COMMIT");
-      return { order_id: orderId, price: totalPrice };
+      return { order_id: orderId, price: totalPrice, accountNumber: yourAccountNumber  };
     } catch (err) {
       await client.query("ROLLBACK");
       throw err;
@@ -179,7 +182,7 @@ export class OrderService {
            SET status = (
              SELECT status_id
                FROM status
-              WHERE description = 'pending'
+              WHERE description = 'Pending'
            )
          WHERE order_id = $1
         `,

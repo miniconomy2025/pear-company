@@ -1,8 +1,10 @@
 import axios from 'axios';
 import type { ElectronicsPriceResponse, ElectronicsCreateOrderResponse, ElectronicsGetOrderResponse } from "../types/extenalApis.js";
 
+const ELECTRONICS_BASE_URL = process.env.ELECTRONICS_BASE_URL
+
 const client = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: ELECTRONICS_BASE_URL,
   timeout: 5000,
   headers: { 'Content-Type': 'application/json' }
 });
@@ -29,7 +31,7 @@ export async function getElectronics(): Promise<ElectronicsPriceResponse | undef
   }
 }
 
-export async function createOrder(quantity: number): Promise<ElectronicsCreateOrderResponse | undefined> {
+export async function createElectronicsOrder(quantity: number): Promise<ElectronicsCreateOrderResponse | undefined> {
   try {
     const res = await client.post('/orders', { quantity });
     return res.data;

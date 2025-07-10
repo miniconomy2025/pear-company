@@ -12,6 +12,7 @@ export interface PublicOrderRequest {
 export interface PublicOrderResponse {
   order_id: number
   price: number
+  accountNumber: string
 }
 
 export interface PublicStockItem {

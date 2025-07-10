@@ -1,8 +1,10 @@
 import axios from "axios";
 import type { ScreensPriceResponse, ScreensCreateOrderResponse, ScreensGetOrderResponse } from "../types/extenalApis.js";
 
+const SCREEN_BASE_URL = process.env.SCREEN_BASE_URL
+
 const client = axios.create({
-  baseURL: "https://localhost:8080",
+  baseURL: SCREEN_BASE_URL,
   timeout: 5000,
   headers: {
     "Content-Type": "application/json",
@@ -31,7 +33,7 @@ export async function getScreens(): Promise<ScreensPriceResponse | undefined> {
   }
 }
 
-export async function createOrder(quantity: number): Promise<ScreensCreateOrderResponse | undefined> {
+export async function createScreenOrder(quantity: number): Promise<ScreensCreateOrderResponse | undefined> {
   try {
     const res = await client.post("/order", { quantity });
     return res.data;
