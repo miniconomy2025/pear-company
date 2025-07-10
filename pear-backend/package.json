@@ -5,24 +5,32 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist",
     "build": "npm run clean && npx tsc",
-    "dev": "nodemon --exec node --loader ts-node/esm src/index.ts"
+    "build-linux": "npm run clean && npx tsc",
+    "dev": "nodemon --exec node --loader ts-node/esm src/index.ts",
+    "start": "npm run build && node dist/index.js",
+    "db:test": "node --loader ts-node/esm src/scripts/testConnection.ts"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.7",
-    "dotenv": "^17.0.0",
-    "express": "^5.1.0",
-    "install": "^0.13.0",
+    "@types/pg": "^8.15.4",
     "nodemon": "^3.1.10",
     "npm": "^11.4.2",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "pearphones-dev": "file:.."
+    "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "pearphones-dev": "file:..",
+    "pg": "^8.16.3"
   }
 }

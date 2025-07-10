@@ -1,0 +1,55 @@
+.styled-filters {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  flex-wrap: wrap;    
+}
+
+.styled-filters label {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  font-weight: 500;
+  align-items: center;
+}
+
+.styled-filters input[type="date"] {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background-color: #0056b3;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+.preset-btn {
+  padding: 0.4rem 0.8rem;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.preset-btn:hover {
+  background-color: #d0d0d0;
+}

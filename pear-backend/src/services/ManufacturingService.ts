@@ -1,0 +1,154 @@
+import {pool} from "../config/database.js";
+
+export class ManufacturingService {
+  
+    async phoneManufacturing(phoneId: number, quantity: number, simulatedDate: Date): Promise<void> {
+        console.log('logging phoneManufacturing', phoneId);
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
+            const simTime = simulatedDate.toISOString();
+
+            const machinesRes = await client.query<{
+                machine_id: number;
+                rate_per_day: number;
+            }>(
+                `SELECT machine_id, rate_per_day
+                FROM machines
+                WHERE phone_id = $1`,
+                [phoneId]
+            );
+            console.log('logging', 'machinesRes', machinesRes);
+            if (machinesRes.rowCount === 0) {
+                return;
+            }
+
+            const partsRes = await client.query<{
+                inventory_id:        number;
+                part_id:             number;
+                quantity_available:  number;
+            }>(
+                `SELECT inventory_id,
+                        part_id,
+                        quantity_available
+                FROM inventory`
+            );
+            console.log('logging', 'partsRes', partsRes);
+
+            const partUsage = new Map<number, number>();
+            let phoneProduction = 0;
+
+            for (const { machine_id, rate_per_day } of machinesRes.rows) {
+                console.log('logging', machine_id, 'machinesRes', rate_per_day);
+
+                const ratiosRes = await client.query<{
+                part_id: number;
+                name: string;
+                quantity: number;
+                }>(
+                `
+                SELECT mr.part_id, p.name, mr.quantity
+                    FROM machine_ratios mr
+                    JOIN parts p ON p.part_id = mr.part_id
+                WHERE mr.machine_id = $1
+                `,
+                [machine_id]
+                );
+                console.log('logging', 'ratiosRes', ratiosRes, machine_id);
+
+                let produced = (quantity > rate_per_day) && rate_per_day || quantity;
+                for (const { part_id, quantity_available } of partsRes.rows) {
+                
+                    const part = ratiosRes.rows.find(row => row.part_id === part_id);
+                    
+                    const phonesProducable = (part?.quantity && Math.floor( quantity_available / part?.quantity)) || 0;
+
+                    if (phonesProducable < produced) {
+                        produced = phonesProducable;
+                    }
+                }
+
+                if (produced <= 0) {
+                continue;
+                }
+
+                for (const { part_id, quantity } of ratiosRes.rows) {
+                    const needed = quantity * produced;
+                    partUsage.set(part_id, (partUsage.get(part_id) || 0) + needed);
+                }
+                phoneProduction += produced;
+                console.log('logging', machine_id, 'machinesRes', phoneProduction, partUsage);
+            }
+
+            console.log('logging', partUsage, phoneId, phoneProduction, simTime);
+
+            for (const [part_id, used] of partUsage.entries()) {
+                await client.query(
+                `UPDATE inventory
+                    SET quantity_available = quantity_available - $2
+                WHERE part_id = $1`,
+                [part_id, used]
+                );
+            }
+            console.log('logging', phoneId, phoneProduction, simTime);
+
+            await client.query(
+                `UPDATE stock
+                    SET quantity_available = quantity_available + $2,
+                        updated_at         = $3
+                WHERE phone_id = $1`,
+                [phoneId, phoneProduction, simTime]
+            );
+
+            await client.query("COMMIT");
+        } catch (err) {
+            await client.query("ROLLBACK");
+        throw err;
+        } finally {
+            client.release();
+        }
+    }
+
+    async calculatePhoneDemand(): Promise<Array<{ phone_id: number; demand: number, stockNeeded: number }>> {
+        console.log('logging calculatePhoneDemand');
+        const client = await pool.connect();
+        try {
+            const maxStockLevel = 10000;
+            const res = await client.query<{
+                phone_id: number;
+                quantity_available: number;
+                capacity: number;
+            }>(
+                `
+                SELECT s.phone_id,
+                    s.quantity_available,
+                    COALESCE(SUM(m.rate_per_day), 0) AS capacity
+                FROM stock s
+                LEFT JOIN machines m ON m.phone_id = s.phone_id
+                GROUP BY s.phone_id, s.quantity_available
+                `
+            );
+            return res.rows.map(r => ({
+                phone_id: r.phone_id,
+                demand: Math.min(r.capacity, Math.max(0, maxStockLevel - r.quantity_available)),
+                stockNeeded: Math.max(0, maxStockLevel - r.quantity_available),
+            }));
+        } finally {
+            client.release();
+        }
+    }
+
+    async processManufacturing(simulatedDate: Date): Promise<void> {
+        console.log('logging processManufacturing');
+        try {
+            const phoneDemand = await this.calculatePhoneDemand();
+            phoneDemand.sort((a, b) => a.stockNeeded - b.stockNeeded);
+
+            for (const { phone_id, demand } of phoneDemand) {
+                await this.phoneManufacturing(phone_id, demand, simulatedDate);
+            }
+        } catch (error) {
+            console.error("Error manufacturing goods:", error);
+        }
+    }
+}
