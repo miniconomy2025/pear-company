@@ -336,23 +336,6 @@ jobs:
             echo "PM2 version: $(pm2 --version)"
             echo "Nginx status: $(sudo systemctl is-active nginx)"
           '
-
-      - name: Debug secrets (TEMPORARY - REMOVE AFTER FIXING)
-        run: |
-          echo "Debugging secrets retrieval..."
-          echo "POSTGRES_USER: '${{ env.POSTGRES_USER }}'"
-          echo "POSTGRES_USER length: ${#POSTGRES_USER}"
-          echo "POSTGRES_PASS: '${{ env.POSTGRES_PASS }}'"
-          echo "POSTGRES_PASS length: ${#POSTGRES_PASS}"
-          echo "Expected password: enjoyBBDFD2993"
-          echo "Expected length: 15"
-          
-          # Check if there are any hidden characters
-          echo "POSTGRES_PASS hex dump:"
-          echo -n "${{ env.POSTGRES_PASS }}" | xxd
-        env:
-          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-          POSTGRES_PASS: ${{ env.POSTGRES_PASS }}
         
       - name: Set env variables (FIXED - Direct secret transfer)
         run: |
@@ -395,6 +378,7 @@ jobs:
           CASE_BASE_URL=http://case-supplier-api.projects.bbdgrad.com/api
           ELECTRONICS_BASE_URL=http://electronics-supplier-api.projects.bbdgrad.com
           SCREEN_BASE_URL=https://screen-supplier-api.projects.bbdgrad.com
+          TEST=TESTING VARIABLES
           EOF
           
           # Set proper permissions
@@ -445,25 +429,46 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             # Create nginx config
             sudo tee /etc/nginx/sites-enabled/default > /dev/null << "EOF_NGINX"
-          server {
+            server {
               listen 80;
               server_name pear-company-api.projects.bbdgrad.com;
+              return 301 https://$host$request_uri;
+          }
 
-              # Required for Certbot HTTP-01 challenge
-              location /.well-known/acme-challenge/ {
-                  root /var/www/html;
+          map $ssl_client_s_dn $is_valid_ou {
+              default no;
+              ~OU=sumsang-company yes;
+          }
+
+          server {
+              listen 443 ssl;
+              server_name pear-company-api.projects.bbdgrad.com;
+                
+              ssl_certificate /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
+              ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
+              # Client cert validation (mTLS)
+              ssl_client_certificate /etc/nginx/certificates/root-ca.crt;
+              ssl_verify_client on;
+
+              if ($is_valid_ou = no) {
+                  return 403;
               }
 
               location / {
                   proxy_pass http://localhost:5000;
-                  proxy_http_version 1.1;
-                  proxy_set_header Upgrade $http_upgrade;
-                  proxy_set_header Connection "upgrade";
-                  proxy_set_header Host $host;
-                  proxy_cache_bypass $http_upgrade;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          }
+
+          # TLS only, no mTLS — internal frontend uses this
+          server {
+              listen 444 ssl;
+              server_name pear-company-api.projects.bbdgrad.com;
+
+              ssl_certificate /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
+              ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
+
+              location / {
+                  proxy_pass http://localhost:5000;
               }
           }
           EOF_NGINX

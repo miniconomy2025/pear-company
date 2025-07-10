@@ -19,7 +19,7 @@ const dbHostInfo = parseDbHost(process.env.DB_HOST || "localhost")
 const dbConfig = {
   host: dbHostInfo.host,
   port: process.env.DB_PORT ? Number.parseInt(process.env.DB_PORT, 10) : dbHostInfo.port,
-  database: process.env.DB_NAME || "peardb",
+  database: "peardb",
   user: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD || "password",
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
