@@ -194,35 +194,53 @@ jobs:
             pm2 start ./start-serve.sh --name pear-front-end
           '
 
-      - name: Setup nginx for frontend
+      - name: Setup nginx proxy on frontend
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            # Create nginx config for frontend
-            sudo tee /etc/nginx/sites-enabled/default > /dev/null <<EOF
-            server {
-                listen 80;
-                server_name pear-company.projects.bbdgrad.com;
 
-                # Required for Certbot HTTP-01 challenge
-                location /.well-known/acme-challenge/ {
-                    root /var/www/html;
-                }
+          ssh -o StrictHostKeyChecking=no -i webprivatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
+          sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
+          server {
+          listen 80;
+          server_name pear-company.projects.bbdgrad.com;
 
-                location / {
-                    proxy_pass http://localhost:3000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-            }
-            EOF
-            
+          # Required for Certbot's HTTP-01 challenge
+          location /.well-known/acme-challenge/ {
+              root /var/www/html;
+          }
+
+          location / {
+              proxy_pass http://localhost:3000; # Front-end
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+
+              listen 443 ssl; # managed by Certbot
+              ssl_certificate /etc/letsencrypt/live/pear-company.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
+              ssl_certificate_key /etc/letsencrypt/live/pear-company.projects.bbdgrad.com/privkey.pem; # managed by Certbot
+              include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+              ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+          }
+          server {
+              if ($host = pear-company.projects.bbdgrad.com) {
+                  return 301 https://$host$request_uri;
+              } # managed by Certbot
+
+
+          listen 80;
+          server_name pear-company.projects.bbdgrad.com;
+              return 404; # managed by Certbot
+                  }
+          NGINX_CONF
+          EOF
+              
             # Test and reload nginx
             sudo nginx -t && sudo systemctl reload nginx
           '
@@ -370,34 +388,56 @@ jobs:
             pm2 start index.js --name pear-api
           '
 
-      - name: Setup nginx for API
+      - name: Setup nginx proxy on API EC2
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            # Create nginx config for API
-            sudo tee /etc/nginx/sites-enabled/default > /dev/null <<EOF
-            server {
-                listen 80;
-                server_name pear-company-api.projects.bbdgrad.com;
 
-                # Required for Certbot HTTP-01 challenge
-                location /.well-known/acme-challenge/ {
-                    root /var/www/html;
-                }
+          ssh -o StrictHostKeyChecking=no -i apiprivatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
+          sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
+          server {
+              listen 80;
+              server_name pear-company-api.projects.bbdgrad.com;
+              return 301 https://$host$request_uri;
+          }
 
-                location / {
-                    proxy_pass http://localhost:5000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-            }
-            EOF
+          map $ssl_client_s_dn $is_valid_ou {
+              default no;
+              ~OU=sumsang-company yes;
+          }
+
+          server {
+              listen 443 ssl;
+              server_name pear-company-api.projects.bbdgrad.com;
+                
+              ssl_certificate /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
+              ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
+              # Client cert validation (mTLS)
+              ssl_client_certificate /etc/nginx/certificates/root-ca.crt;
+              ssl_verify_client on;
+
+              if ($is_valid_ou = no) {
+                  return 403;
+              }
+
+              location / {
+                  proxy_pass http://localhost:3000;
+              }
+          }
+
+          # TLS only, no mTLS — internal frontend uses this
+          server {
+              listen 444 ssl;
+              server_name pear-company-api.projects.bbdgrad.com;
+
+              ssl_certificate /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
+              ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
+
+              location / {
+                  proxy_pass http://localhost:3000;
+              }
+          }
+          NGINX_CONF
+          EOF
             
             # Test and reload nginx
             sudo nginx -t && sudo systemctl reload nginx

@@ -90,7 +90,8 @@ export interface CustomersCompanyResponse {
 }
 
 export interface BulkItemRequest {
-  description: string
+  itemName: string,
+  quantity: number
 }
 
 export interface BulkCreatePickUpRequest {
