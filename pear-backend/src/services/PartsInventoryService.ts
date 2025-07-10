@@ -117,7 +117,7 @@ export class PartsInventoryService {
 
           if (!!res?.total_price && !!res?.id) {
             order = {
-              to_account_number: "unknown", //TODO: account number
+              to_account_number: res.account_number,
               to_bank_name: "commercial-bank",
               amount: res.total_price,
               description: `Payment for Order #${res.id} for ${part}`

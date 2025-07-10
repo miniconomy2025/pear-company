@@ -27,7 +27,7 @@ function handleError(err: unknown) {
 
 export async function createAccount(): Promise<CommercialBankAccountResponse | undefined> {
   try {
-    const res = await client.post("/account", {});
+    const res = await client.post("/api/account", {});
     return res.data;
   } catch (err) {
     handleError(err);
@@ -36,7 +36,7 @@ export async function createAccount(): Promise<CommercialBankAccountResponse | u
 
 export async function getMyAccount(): Promise<string | undefined> {
   try {
-    const res = await client.get("/account/me");
+    const res = await client.get("/api/account/me");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -45,7 +45,7 @@ export async function getMyAccount(): Promise<string | undefined> {
 
 export async function setNotificationUrl(notification_url: string): Promise<boolean | undefined> {
   try {
-    const res = await client.post("/account/me/notify", { notification_url });
+    const res = await client.post("/api/account/me/notify", { notification_url });
     return res.data;
   } catch (err) {
     handleError(err);
@@ -54,7 +54,7 @@ export async function setNotificationUrl(notification_url: string): Promise<bool
 
 export async function getBalance(): Promise<number | undefined> {
   try {
-    const res = await client.get("/account/me/balance");
+    const res = await client.get("/api/account/me/balance");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -63,7 +63,7 @@ export async function getBalance(): Promise<number | undefined> {
 
 export async function isAccountFrozen(): Promise<boolean | undefined> {
   try {
-    const res = await client.get("/account/me/frozen");
+    const res = await client.get("/api/account/me/frozen");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -72,7 +72,7 @@ export async function isAccountFrozen(): Promise<boolean | undefined> {
 
 export async function getMyLoans(): Promise<CommercialBankLoansResponse | undefined> {
   try {
-    const res = await client.get("/account/me/loans");
+    const res = await client.get("/api/account/me/loans");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -81,7 +81,7 @@ export async function getMyLoans(): Promise<CommercialBankLoansResponse | undefi
 
 export async function createTransaction(payload: CommercialBankTransationRequest): Promise<CommercialBankTransationResponse | undefined> {
   try {
-    const res = await client.post("/transaction", {
+    const res = await client.post("/api/transaction", {
       to_account_number: payload.to_account_number,
       to_bank_name: payload.to_bank_name,
       amount: payload.amount,
@@ -96,7 +96,7 @@ export async function createTransaction(payload: CommercialBankTransationRequest
 export async function getStatement(from: number, to: number, only_successful: boolean): Promise<Array<CommercialBankTransationItemResponse> |undefined> {
   try {
     const params = { from, to, only_successful };
-    const res = await client.get("/transaction", { params });
+    const res = await client.get("/api/transaction", { params });
     return res.data;
   } catch (err) {
     handleError(err);
@@ -105,7 +105,7 @@ export async function getStatement(from: number, to: number, only_successful: bo
 
 export async function getTransaction(transaction_number: number): Promise<CommercialBankTransationItemResponse |undefined> {
   try {
-    const res = await client.get(`/transaction/${transaction_number}`);
+    const res = await client.get(`/api/transaction/${transaction_number}`);
     return res.data;
   } catch (err) {
     handleError(err);
@@ -114,7 +114,7 @@ export async function getTransaction(transaction_number: number): Promise<Commer
 
 export async function takeLoan(amount: number): Promise<CommercialBankTakeLoanResponse |undefined> {
   try {
-    const res = await client.post("/loan", { amount });
+    const res = await client.post("/api/loan", { amount });
     return res.data;
   } catch (err) {
     handleError(err);
@@ -123,7 +123,7 @@ export async function takeLoan(amount: number): Promise<CommercialBankTakeLoanRe
 
 export async function listLoans(): Promise<Array<CommercialBankLoanListResponse> | undefined> {
   try {
-    const res = await client.get("/loan");
+    const res = await client.get("/api/loan");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -132,7 +132,7 @@ export async function listLoans(): Promise<Array<CommercialBankLoanListResponse>
 
 export async function repayLoan(loan_number: number, amount: number): Promise<CommercialBankLoanPayResponse | undefined> {
   try {
-    const res = await client.post(`/loan/${loan_number}/pay`, { amount });
+    const res = await client.post(`/api/loan/${loan_number}/pay`, { amount });
     return res.data;
   } catch (err) {
     handleError(err);
@@ -141,7 +141,7 @@ export async function repayLoan(loan_number: number, amount: number): Promise<Co
 
 export async function getLoan(loan_number: number): Promise<CommercialBankLoanDetailsResponse | undefined> {
   try {
-    const res = await client.get(`/loan/${loan_number}`);
+    const res = await client.get(`/api/loan/${loan_number}`);
     return res.data;
   } catch (err) {
     handleError(err);
@@ -158,7 +158,7 @@ export async function notifyInterbankTransfer(
   timestamp: number
 ) {
   try {
-    const res = await client.post("/interbank/transfer", {
+    const res = await client.post("/api/interbank/transfer", {
       transaction_number,
       from_account_number,
       from_bank_name,
