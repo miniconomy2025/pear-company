@@ -1,7 +1,7 @@
 // Public API Types - matching the OpenAPI specification exactly
 
 export interface PublicOrderItem {
-  phone_id: number
+  phoneName: string
   quantity: number
 }
 
@@ -42,10 +42,15 @@ export interface SimulationResponse {
   status: string
 }
 
+export interface PublicOrderItems {
+  phone_id: number
+  quantity: number
+}
+
 // Internal types for business logic
 export interface OrderReservation {
   order_id: number
   expires_at: Date
   total_price: number
-  items: PublicOrderItem[]
+  items: PublicOrderItems[]
 }
