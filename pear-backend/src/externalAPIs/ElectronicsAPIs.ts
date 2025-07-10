@@ -1,12 +1,14 @@
 import axios from 'axios';
 import type { ElectronicsPriceResponse, ElectronicsCreateOrderResponse, ElectronicsGetOrderResponse } from "../types/extenalApis.js";
+import { httpsAgent } from '../config/httpClient.js';
 
 const ELECTRONICS_BASE_URL = process.env.ELECTRONICS_BASE_URL
 
 const client = axios.create({
   baseURL: ELECTRONICS_BASE_URL,
   timeout: 5000,
-  headers: { 'Content-Type': 'application/json' }
+  headers: { 'Content-Type': 'application/json' },
+  httpsAgent : httpsAgent,
 });
 
 function handleError(err: unknown) {

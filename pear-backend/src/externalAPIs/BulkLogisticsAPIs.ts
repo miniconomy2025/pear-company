@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { BulkCreatePickUpRequest, BulkCreatePickUpResponse, BulkPickUpResponse } from "../types/extenalApis.js";
+import { httpsAgent } from "../config/httpClient.js";
 
 const BULK_LOGISTICS_BASE_URL = process.env.BULK_LOGISTICS_BASE_URL
 
@@ -7,6 +8,7 @@ const client = axios.create({
   baseURL: BULK_LOGISTICS_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
+  httpsAgent : httpsAgent,
 });
 
 function handleError(err: unknown) {

@@ -298,6 +298,8 @@ jobs:
             API_EC2_PRIVATE_KEY, apiprivatekey
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
+            CLIENT_CERT_PATH, pear-company-client-cert
+            CLIENT_KEY_PATH, pear-company-client-key
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -364,6 +366,8 @@ jobs:
           
           # Create .env file with decoded values
           cat > /home/ubuntu/.env << EOF
+          CLIENT_CERT_PATH=${{ env.CLIENT_CERT_PATH }}
+          CLIENT_KEY_PATH=${{ env.CLIENT_KEY_PATH }}
           DB_USER=\$POSTGRES_USER_DECODED
           DB_PASSWORD=\$POSTGRES_PASS_DECODED
           DB_HOST=$DB_HOST_CLEAN
@@ -385,14 +389,12 @@ jobs:
           # Set proper permissions
           chmod 600 /home/ubuntu/.env
           echo "Environment file created with base64 decoding method"
-          
-          # Debug: Show password length (without revealing content)
-          echo "Password length: \$(echo -n "\$POSTGRES_PASS_DECODED" | wc -c)"
-          echo "Expected length: 15"
           ENVEOF
         env:
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
           POSTGRES_PASS: ${{ env.POSTGRES_PASS }}
+          CLIENT_CERT_PATH: ${{ env.CLIENT_CERT_PATH }}
+          CLIENT_KEY_PATH: ${{ env.CLIENT_KEY_PATH }}
         
       - name: Deploy
         run: |

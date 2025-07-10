@@ -28,25 +28,19 @@ import { createInternalApiRoutes } from "./routes/internalApiRoutes.js"
 import cors from "cors"
 import { BankingService } from "./services/BankingService.js"
 
-// Load environment variables from .env file
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
 
-// Test database connection on startup
 await testConnection()
 
-// Middleware setup
 app.use(express.json())
 app.use(loggingMiddleware)
 
-// Configure CORS
 const allowedOrigins = [
   "https://pear-company.projects.bbdgrad.com",
   "http://localhost:3000", // for local dev
-  "https://thoh-api.projects.bbdgrad.com",
-  "https://commercial-bank-api.projects.bbdgrad.com",
 ]
 
 app.use(
@@ -81,6 +75,7 @@ app.get("/health", (req, res) => {
 // Dependency Injection setup - Services
 container.register("StockService", () => new StockService(), true)
 container.register("OrderService", () => new OrderService(), true)
+container.register("MachineFailureService", () => new MachineFailureService(), true)
 container.register("PaymentService", () => new PaymentService(), true)
 container.register("BankingService", () => new BankingService(), true)
 container.register("MachinePurchasingService", () => new MachinePurchasingService(), true)

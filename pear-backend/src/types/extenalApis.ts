@@ -246,6 +246,5 @@ export interface RetailBankTransationRequest {
 }
 
 export interface RetailBankTransationResponse {
-  transferId: string,
-  creationStatus: string
+  transferId: string
 }

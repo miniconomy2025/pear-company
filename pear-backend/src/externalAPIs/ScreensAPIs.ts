@@ -1,14 +1,14 @@
 import axios from "axios";
 import type { ScreensPriceResponse, ScreensCreateOrderResponse, ScreensGetOrderResponse } from "../types/extenalApis.js";
+import { httpsAgent } from "../config/httpClient.js";
 
 const SCREEN_BASE_URL = process.env.SCREEN_BASE_URL
 
 const client = axios.create({
   baseURL: SCREEN_BASE_URL,
   timeout: 5000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
+  httpsAgent : httpsAgent,
 });
 
 function handleError(err: unknown) {

@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { RetailBankTransationRequest, RetailBankTransationResponse} from "../types/extenalApis.js";
+import { httpsAgent } from "../config/httpClient.js";
 
 const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL
 
@@ -7,6 +8,7 @@ const client = axios.create({
   baseURL: RETAIL_BANK_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
+  httpsAgent : httpsAgent,
 });
 
 function handleError(err: unknown) {
