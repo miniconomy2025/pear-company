@@ -7,7 +7,7 @@ export interface InventoryItem {
 
 export const getInventoryReport = async (): Promise<InventoryItem[]> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/reports/inventory`);
+    const res = await fetch(`${API_BASE_URL}/internal-api/reports/inventory`);
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }
