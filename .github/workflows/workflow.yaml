@@ -366,8 +366,8 @@ jobs:
           
           # Create .env file with decoded values
           cat > /home/ubuntu/.env << EOF
-          CLIENT_CERT_PATH=${{ env.CLIENT_CERT_PATH }}
-          CLIENT_KEY_PATH=${{ env.CLIENT_KEY_PATH }}
+          CLIENT_CERT_PATH=/etc/nginx/client-certs/pear-company-client.crt
+          CLIENT_KEY_PATH=/etc/nginx/client-certs/pear-company-client.key
           DB_USER=\$POSTGRES_USER_DECODED
           DB_PASSWORD=\$POSTGRES_PASS_DECODED
           DB_HOST=$DB_HOST_CLEAN
