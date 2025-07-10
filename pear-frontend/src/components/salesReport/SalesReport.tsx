@@ -4,7 +4,7 @@ import type React from "react";
 import { useEffect, useState, useCallback } from "react";
 import { getSalesReport, SalesReportItem } from '../../services/salesReportService';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 import DateFilter from '../../components/filters/DateFilter';
 import './SalesReport.css';
