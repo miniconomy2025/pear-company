@@ -160,6 +160,7 @@ export class MachinePurchasingService {
       // Step 3: Make payment via Commercial Bank
       const paymentResponse = await createTransaction({
         to_account_number: orderResponse.bankAccount,
+        to_bank_name: "commercial-bank",
         amount: orderResponse.totalPrice,
         description: `Payment for ${quantity}x ${machineName} (Order #${orderResponse.orderId})`,
       })

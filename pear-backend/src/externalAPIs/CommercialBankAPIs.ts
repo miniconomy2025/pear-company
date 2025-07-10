@@ -83,7 +83,7 @@ export async function createTransaction(payload: CommercialBankTransationRequest
   try {
     const res = await client.post("/transaction", {
       to_account_number: payload.to_account_number,
-      to_bank_name: "commercial-bank",
+      to_bank_name: payload.to_bank_name || "commercial-bank",
       amount: payload.amount,
       description: payload.description,
     });

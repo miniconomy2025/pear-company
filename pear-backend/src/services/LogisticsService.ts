@@ -206,6 +206,7 @@ export class LogisticsService {
 
       await createTransaction({
         to_account_number: "unknown", //TODO: account number
+        to_bank_name: "commercial-bank",
         amount: pickupRes?.amount || 0,
         description: `Payment for delivery #${ pickupRes?.refernceno}`
       });
@@ -263,6 +264,7 @@ export class LogisticsService {
 
     await createTransaction({
       to_account_number: pickupRes.bulkLogisticsBankAccountNumber,
+      to_bank_name: "commercial-bank",
       amount: pickupRes.cost,
       description: `Payment for Order #${pickupRes.paymentReferenceId} for ${pickupRes.pickupRequestId}`
     });

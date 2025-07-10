@@ -56,6 +56,7 @@ export class PartsInventoryService {
           if (!!res?.bankAccountNumber && !!res?.totalPrice && !!res?.orderId) {
             order = {
               to_account_number: res.bankAccountNumber,
+              to_bank_name: "commercial-bank",
               amount: res.totalPrice,
               description: `Payment for Order #${res.orderId} for ${part}`
             };
@@ -68,6 +69,7 @@ export class PartsInventoryService {
           if (!!res?.total_price && !!res?.id) {
             order = {
               to_account_number: "unknown", //TODO: account number
+              to_bank_name: "commercial-bank",
               amount: res.total_price,
               description: `Payment for Order #${res.id} for ${part}`
             };
@@ -80,6 +82,7 @@ export class PartsInventoryService {
           if (!!res?.bankNumber && !!res?.amountDue && !!res?.orderId) {
             order = {
               to_account_number: res.bankNumber,
+              to_bank_name: "commercial-bank",
               amount: res.amountDue,
               description: `Payment for Order #${res.orderId} for ${part}`
             };

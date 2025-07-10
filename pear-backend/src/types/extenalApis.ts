@@ -175,6 +175,7 @@ export interface CommercialBankLoansResponse {
 
 export interface CommercialBankTransationRequest {
   to_account_number: string,
+  to_bank_name: string,
   amount: number,
   description: string
 }
