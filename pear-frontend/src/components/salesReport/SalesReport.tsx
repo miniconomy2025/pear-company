@@ -4,7 +4,7 @@ import type React from "react";
 import { useEffect, useState, useCallback } from "react";
 import { getSalesReport, SalesReportItem } from '../../services/salesReportService';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 import DateFilter from '../../components/filters/DateFilter';
 import './SalesReport.css';
@@ -58,8 +58,7 @@ const SalesReport: React.FC = () => {
 
       <div className="chart-card">
         <h3>Units Sold per Model</h3>
-        <ResponsiveContainer width={600} height={300}>
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+          <BarChart width={600} height={300} data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="model" />
             <YAxis />
@@ -67,13 +66,11 @@ const SalesReport: React.FC = () => {
             <Legend />
             <Bar type="monotone" dataKey="units_sold" fill="#82ca9d" />
           </BarChart>
-        </ResponsiveContainer>
       </div>
 
       <div className="chart-card">
         <h3>Revenue per Model in Ð(Dogecoin)</h3>
-        <ResponsiveContainer width={600} height={300}>
-          <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+          <LineChart width={600} height={300} data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="model" />
             <YAxis />
@@ -81,7 +78,6 @@ const SalesReport: React.FC = () => {
             <Legend />
             <Line dataKey="revenue" stroke="#8884d8" />
           </LineChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
