@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist",
     "build": "npm run clean && npx tsc",
     "build-linux": "npm run clean && npx tsc",
     "dev": "nodemon --exec node --loader ts-node/esm src/index.ts",
@@ -21,6 +21,7 @@
     "@types/pg": "^8.15.4",
     "nodemon": "^3.1.10",
     "npm": "^11.4.2",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },

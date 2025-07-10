@@ -1,8 +1,10 @@
 import axios from "axios";
 import type { CasesPriceResponse, CasesCreateOrderResponse, CasesGetOrderResponse } from "../types/extenalApis.js";
 
+const CASE_BASE_URL = process.env.CASE_BASE_URL
+
 const client = axios.create({
-  baseURL: "http://case-supplier-api.projects.bbdgrad.com/api",
+  baseURL: CASE_BASE_URL,
   timeout: 5000,
   headers: {
     "Content-Type": "application/json",
@@ -31,7 +33,7 @@ export async function getCases(): Promise<CasesPriceResponse | undefined> {
   }
 }
 
-export async function createOrder(quantity: number): Promise<CasesCreateOrderResponse | undefined> {
+export async function createCaseOrder(quantity: number): Promise<CasesCreateOrderResponse | undefined> {
   try {
     const res = await client.post("/orders", { quantity });
     return res.data;

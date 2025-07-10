@@ -56,6 +56,7 @@ export interface CasesCreateOrderResponse {
   quantity: number,
   total_price: number,
   ordered_at: string,
+  account_number: string
 }
 
 export interface CasesGetOrderResponse {
@@ -75,6 +76,7 @@ export interface CustomersPickUpRequest {
 export interface CustomersPickUpResponse {
   refernceno: number,
   amount: number,
+  accountNumber: string
 }
 
 export interface CustomersAllPickUpResponse {

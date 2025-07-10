@@ -5,7 +5,7 @@ import {pool} from "../config/database.js";
 
 export class LogisticsService {
 
-   constructor(private machinePurchasingService: MachinePurchasingService) {} 
+  constructor(private machinePurchasingService: MachinePurchasingService) {} 
 
   async confirmGoodsDelivered(delivery: DeliveryConfirmation): Promise<void> {
 
