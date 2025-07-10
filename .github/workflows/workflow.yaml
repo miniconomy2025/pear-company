@@ -337,7 +337,24 @@ jobs:
             echo "Nginx status: $(sudo systemctl is-active nginx)"
           '
 
-      - name: Set env variables (SECURE)
+      - name: Debug secrets (TEMPORARY - REMOVE AFTER FIXING)
+        run: |
+          echo "Debugging secrets retrieval..."
+          echo "POSTGRES_USER: '${{ env.POSTGRES_USER }}'"
+          echo "POSTGRES_USER length: ${#POSTGRES_USER}"
+          echo "POSTGRES_PASS: '${{ env.POSTGRES_PASS }}'"
+          echo "POSTGRES_PASS length: ${#POSTGRES_PASS}"
+          echo "Expected password: enjoyBBDFD2993"
+          echo "Expected length: 15"
+          
+          # Check if there are any hidden characters
+          echo "POSTGRES_PASS hex dump:"
+          echo -n "${{ env.POSTGRES_PASS }}" | xxd
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASS: ${{ env.POSTGRES_PASS }}
+        
+      - name: Set env variables (FIXED - Direct secret transfer)
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
           
@@ -351,12 +368,21 @@ jobs:
           
           echo "DB Host cleaned: $DB_HOST_CLEAN"
           
-          # Create .env file securely without logging sensitive data
+          # Create .env file using base64 encoding to avoid shell interpretation
+          POSTGRES_PASS_B64=$(echo -n "${{ env.POSTGRES_PASS }}" | base64 -w 0)
+          POSTGRES_USER_B64=$(echo -n "${{ env.POSTGRES_USER }}" | base64 -w 0)
+          
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << ENVEOF
-          echo "Creating secure environment file..."
+          echo "Creating secure environment file with base64 decoding..."
+          
+          # Decode the base64 encoded secrets
+          POSTGRES_USER_DECODED=\$(echo "$POSTGRES_USER_B64" | base64 -d)
+          POSTGRES_PASS_DECODED=\$(echo "$POSTGRES_PASS_B64" | base64 -d)
+          
+          # Create .env file with decoded values
           cat > /home/ubuntu/.env << EOF
-          DB_USER=${{ env.POSTGRES_USER }}
-          DB_PASSWORD=${{ env.POSTGRES_PASS }}
+          DB_USER=\$POSTGRES_USER_DECODED
+          DB_PASSWORD=\$POSTGRES_PASS_DECODED
           DB_HOST=$DB_HOST_CLEAN
           DB_PORT=5432
           DB_NAME=peardb
@@ -369,8 +395,15 @@ jobs:
           
           # Set proper permissions
           chmod 600 /home/ubuntu/.env
-          echo "Environment file created securely (no sensitive data logged)"
+          echo "Environment file created with base64 decoding method"
+          
+          # Debug: Show password length (without revealing content)
+          echo "Password length: \$(echo -n "\$POSTGRES_PASS_DECODED" | wc -c)"
+          echo "Expected length: 15"
           ENVEOF
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASS: ${{ env.POSTGRES_PASS }}
         
       - name: Deploy
         run: |
@@ -384,6 +417,11 @@ jobs:
             
             # Copy environment file to the app directory
             cp /home/ubuntu/.env .
+            
+            # Debug: Check if .env file was created correctly (mask password)
+            echo "=== Environment file contents (masked) ==="
+            sed "s/DB_PASSWORD=.*/DB_PASSWORD=***MASKED***/" .env
+            echo "=========================================="
             
             npm install &&
             
@@ -601,6 +639,7 @@ jobs:
             DB_HOST_ONLY="$DB_HOST"
           fi
           echo "Connecting to: $DB_HOST_ONLY"
+          echo "Using user: ${{ env.POSTGRES_USER }}"
           docker run --rm \
             --volume ${{ github.workspace }}/migrations:/flyway/sql:ro \
             redgate/flyway \
