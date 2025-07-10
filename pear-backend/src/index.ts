@@ -10,10 +10,12 @@ import { SimulationService } from "./services/SimulationService.js"
 import { ManufacturingService } from "./services/ManufacturingService.js"
 import { MachinePurchasingService } from "./services/MachinePurchasingService.js"
 import { PartsInventoryService } from "./services/PartsInventoryService.js"
+import { MachineFailureService } from "./services/MachineFailureService.js"
 import { StockController } from "./controllers/StockController.js"
 import { OrderController } from "./controllers/OrderController.js"
 import { LogisticsController } from "./controllers/LogisticsController.js"
 import { SimulationController } from "./controllers/SimulationController.js"
+import { MachineFailureController } from "./controllers/MachineFailureController.js"
 import { createPublicApiRoutes } from "./routes/publicApiRoutes.js"
 import { loggingMiddleware, errorHandlingMiddleware, notFoundMiddleware } from "./middleware/index.js"
 import { InventoryService } from "./services/InventoryService.js"
@@ -163,6 +165,14 @@ container.register(
   () => {
     const productionService = container.resolve<ProductionService>("ProductionService")
     return new ProductionController(productionService)
+  },
+  true,
+)
+container.register(
+  "MachineFailureController",
+  () => {
+    const machineFailureService = container.resolve<MachineFailureService>("MachineFailureService")
+    return new MachineFailureController(machineFailureService)
   },
   true,
 )

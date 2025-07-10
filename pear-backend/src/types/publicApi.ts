@@ -54,3 +54,10 @@ export interface OrderReservation {
   total_price: number
   items: PublicOrderItems[]
 }
+
+export interface MachineFailureRequest {
+  machineName: string,
+  failureQuantity: number,
+  simulationDate: string,
+  simulationTime: string
+}
