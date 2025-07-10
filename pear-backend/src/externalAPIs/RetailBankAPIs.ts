@@ -1,10 +1,10 @@
 import axios from "axios";
 import type { RetailBankTransationRequest, RetailBankTransationResponse} from "../types/extenalApis.js";
 
-const COMMERCIAL_BANK_BASE_URL = process.env.COMMERCIAL_BANK_BASE_URL
+const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL
 
 const client = axios.create({
-  baseURL: COMMERCIAL_BANK_BASE_URL,
+  baseURL: RETAIL_BANK_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
 });
