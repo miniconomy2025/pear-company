@@ -52,7 +52,30 @@ components:
               price:
                 type: number
                 format: float
-
+    
+    MachineFailure:
+      type: object
+      required:
+        - machineName
+        - failureQuantity
+        - simulationDate
+        - simulationTime
+      properties:
+        machineName:
+          type: string
+          description: Name of the phone model whose machines failed (matches phones.name)
+        failureQuantity:
+          type: integer
+          minimum: 0
+          description: Number of machines to retire
+        simulationDate:
+          type: string
+          format: date
+          description: Date of the failure event (YYYY-MM-DD)
+        simulationTime:
+          type: string
+          pattern: '^\\d{2}:\\d{2}:\\d{2}$'
+          description: Time of the failure event (HH:MM:SS)
 
 
 paths:
@@ -184,3 +207,18 @@ paths:
           description: Consumer delivery recorded
         '400':
           description: Invalid delivery data
+  
+  /machine-failure:
+    post:
+      summary: Report machine failure events to Pear phones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineFailure'
+      responses:
+        '200':
+          description: Machine failure recorded
+        '400':
+          description: Invalid machine failure data

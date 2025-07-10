@@ -4,6 +4,7 @@ import type { StockController } from "../controllers/StockController.js"
 import type { OrderController } from "../controllers/OrderController.js"
 import type { LogisticsController } from "../controllers/LogisticsController.js"
 import type { SimulationController } from "../controllers/SimulationController.js"
+import type { MachineFailureController } from "../controllers/MachineFailureController.js"
 
 export const createPublicApiRoutes = (): Router => {
   const router = Router()
@@ -13,6 +14,7 @@ export const createPublicApiRoutes = (): Router => {
   const orderController = container.resolve<OrderController>("OrderController")
   const logisticsController = container.resolve<LogisticsController>("LogisticsController")
   const simulationController = container.resolve<SimulationController>("SimulationController")
+  const machineFailureController = container.resolve<MachineFailureController>("MachineFailureController")
 
   // Stock endpoints
   router.get("/stock", stockController.getStock)
@@ -27,6 +29,9 @@ export const createPublicApiRoutes = (): Router => {
 
   // Simulation control endpoints
   router.post("/simulation/start", simulationController.startSimulation)
+
+  // Machine failure endpoint
+  router.post("/machines/failure", machineFailureController.failedMachine)
 
   return router
 }

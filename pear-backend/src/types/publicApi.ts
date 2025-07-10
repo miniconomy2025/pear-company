@@ -42,10 +42,16 @@ export interface SimulationResponse {
   status: string
 }
 
-// Internal types for business logic
 export interface OrderReservation {
   order_id: number
   expires_at: Date
   total_price: number
   items: PublicOrderItem[]
+}
+
+export interface MachineFailureRequest {
+  machineName: string,
+  failureQuantity: number,
+  simulationDate: string,
+  simulationTime: string
 }
