@@ -5,6 +5,7 @@ import { SimulatedClock } from "../utils/SimulatedClock.js"
 import { pool } from "../config/database.js"
 import type { BankingService } from "../services/BankingService.js"
 import type { MachinePurchasingService } from "./MachinePurchasingService.js"
+import { getUnixEpochStartTime } from "../externalAPIs/SimulationAPIs.js"
 import { PartsInventoryService } from "./PartsInventoryService.js";
 
 export class SimulationService {
@@ -46,14 +47,6 @@ export class SimulationService {
     try {
       await this.cleanSimulationData();
 
-      // TEMPORARY: Mock the external API call for testing
-      console.log("TESTING MODE: Using mock epoch time instead of external API...")
-
-      const thohEpochStartMs = Date.now()
-
-      console.log(`Mock epoch start time: ${new Date(thohEpochStartMs).toISOString()}`)
-
-      /* COMMENTED OUT FOR TESTING - UNCOMMENT WHEN EXTERNAL API IS READY
       console.log("Fetching simulation start time from external Simulation API...")
       const thohResponse = await getUnixEpochStartTime()
 
@@ -65,10 +58,11 @@ export class SimulationService {
       if (isNaN(thohEpochStartMs)) {
         throw new Error("Invalid epoch time received from Simulation API (not a number).")
       }
-      */
+      
 
       SimulatedClock.setSimulationStartTime(thohEpochStartMs, new Date("2050-01-01T00:00:00Z"))
 
+      await SimulatedClock.saveCurrentDateToDatabase()
       this.simulationRunning = true
 
       const currentSimulatedDate = SimulatedClock.getSimulatedDate()
@@ -115,7 +109,7 @@ export class SimulationService {
     if (this.tickTimer) {
       clearInterval(this.tickTimer)
       this.tickTimer = null
-      console.log("⏹️ Automatic tick timer stopped")
+      console.log("Automatic tick timer stopped")
     }
   }
 
@@ -126,6 +120,7 @@ export class SimulationService {
 
     SimulatedClock.advanceDay()
     const currentSimulatedDate = SimulatedClock.getSimulatedDate()
+    await SimulatedClock.saveCurrentDateToDatabase()
     const currentSimulatedEndOfDay = SimulatedClock.getSimulatedEndOfDay()
 
     // Enhanced logging for testing

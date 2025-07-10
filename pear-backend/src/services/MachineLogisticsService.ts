@@ -15,23 +15,23 @@ interface MachineDeliveryTracking {
 }
 
 export class MachineLogisticsService {
-  /**
-   * Arrange pickup for completed machine order
-   * Called after machine payment is confirmed with THOH
-   */
+
   async arrangePickup(orderResponse: SimulationBuyMachineResponse, machineOrderId: number): Promise<boolean> {
     try {
+      
+      const items = []
+      for (let i = 0; i < orderResponse.quantity; i++) {
+        items.push({
+          itemName: orderResponse.machineName,
+          quantity: orderResponse.unitWeight, // Each machine's weight as quantity
+        })
+      }
 
-      // Step 1: Create pickup request with Bulk Logistics
       const pickupRequest: BulkCreatePickUpRequest = {
         originalExternalOrderId: orderResponse.orderId.toString(),
         originCompanyId: "thoh",
         destinationCompanyId: "pear-company",
-        items: [
-          {
-            description: `${orderResponse.quantity}x ${orderResponse.machineName} (Weight: ${orderResponse.totalWeight}kg)`,
-          },
-        ],
+        items: items,
       }
 
       const pickupResponse = await createPickupRequest(pickupRequest)
@@ -40,13 +40,11 @@ export class MachineLogisticsService {
         throw new Error("Failed to create pickup request")
       }
 
-      // Step 2: Store pickup details in database
       await this.storePickupRequest(machineOrderId, pickupResponse)
 
-      // Step 3: Pay for logistics using Commercial Bank
       const paymentResponse = await createTransaction({
         to_account_number: pickupResponse.bulkLogisticsBankAccountNumber,
-        to_bank_name: "bulk-logistics",
+        to_bank_name: "commercial-bank",
         amount: pickupResponse.cost,
         description: `Logistics payment for machine pickup (Request #${pickupResponse.pickupRequestId}, Ref: ${pickupResponse.paymentReferenceId})`,
       })
@@ -150,7 +148,6 @@ export class MachineLogisticsService {
       await client.query("BEGIN")
 
 
-      // Step 1: Find the machine delivery record and verify payment status
       const deliveryResult = await client.query(
         `
       SELECT md.*, mp.phone_id, mp.machines_purchased, mp.rate_per_day, 

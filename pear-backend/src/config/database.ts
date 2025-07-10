@@ -5,32 +5,46 @@ dotenv.config()
 
 const { Pool } = pg
 
+const parseDbHost = (dbHost: string) => {
+  if (dbHost.includes(":")) {
+    const [host, port] = dbHost.split(":")
+    return { host, port: Number.parseInt(port, 10) }
+  }
+  return { host: dbHost, port: 5432 }
+}
+
+const dbHostInfo = parseDbHost(process.env.DB_HOST || "localhost")
+
 // Database configuration
 const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  port: Number.parseInt(process.env.DB_PORT || "5432"),
+  host: dbHostInfo.host,
+  port: process.env.DB_PORT ? Number.parseInt(process.env.DB_PORT, 10) : dbHostInfo.port,
   database: process.env.DB_NAME || "peardb",
   user: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD || "password",
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, 
 }
 
-// Create connection pool
+
 export const pool = new Pool(dbConfig)
 
-// Test database connection
 export const testConnection = async (): Promise<boolean> => {
   try {
+    console.log(`Testing connection to ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}...`)
     const client = await pool.connect()
     await client.query("SELECT NOW()")
     client.release()
-    console.log("✅ Database connection successful")
+    console.log("Database connection successful")
+    console.log(`Connected to: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`)
     return true
   } catch (error) {
-    console.error("❌ Database connection failed:", error)
+    console.error("Database connection failed:", error)
+    console.error(`Attempted connection: ${dbConfig.host}:${dbConfig.port}`)
+    console.error(`Database: ${dbConfig.database}`)
+    console.error(`User: ${dbConfig.user}`)
     return false
   }
 }
