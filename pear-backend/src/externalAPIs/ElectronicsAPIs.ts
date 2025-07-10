@@ -29,7 +29,7 @@ export async function getElectronics(): Promise<ElectronicsPriceResponse | undef
   }
 }
 
-export async function createElectronicsOrder(quantity: number): Promise<ElectronicsCreateOrderResponse | undefined> {
+export async function createOrder(quantity: number): Promise<ElectronicsCreateOrderResponse | undefined> {
   try {
     const res = await client.post('/orders', { quantity });
     return res.data;
