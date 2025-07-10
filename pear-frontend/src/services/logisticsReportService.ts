@@ -19,7 +19,7 @@ export interface ConsumerPendingDeliveriesData {
 
 export const getBulkDeliveries = async (): Promise<BulkParts[]> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/reports/logistics/bulk`);
+    const res = await fetch(`${API_BASE_URL}/internal-api/reports/logistics/bulk`);
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }
@@ -35,7 +35,7 @@ export const getConsumerDeliveries = async (): Promise<
 > => {
   try {
     const res = await fetch(
-      `${API_BASE_URL}/reports/logistics/consumer`
+      `${API_BASE_URL}/internal-api/reports/logistics/consumer`
     );
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
@@ -52,7 +52,7 @@ export const getConsumerPendingDeliveries = async (): Promise<
 > => {
   try {
     const res = await fetch(
-      `${API_BASE_URL}/reports/logistics/consumer/pending`
+      `${API_BASE_URL}/internal-api/reports/logistics/consumer/pending`
     );
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
