@@ -2,6 +2,9 @@ import type { PublicOrderRequest, PublicOrderResponse, OrderReservation } from "
 import {pool} from "../config/database.js";
 import { StockService } from "./StockService.js";
 import { PaymentService } from "./PaymentService.js";
+import { createPickup } from "../externalAPIs/ConsumerLogisticsAPIs.js";
+import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js";
+import { createRetailTransaction } from "../externalAPIs/RetailBankAPIs.js";
 
 const stockService = new StockService();
 const paymentService = new PaymentService();
@@ -14,8 +17,8 @@ export class OrderService {
     }
 
     for (const item of orderRequest.items) {
-      if (!item.phone_id || !item.quantity || item.quantity <= 0) {
-        throw new Error("Invalid item: phone_id and positive quantity required")
+      if (!item.phoneName || !item.quantity || item.quantity <= 0) {
+        throw new Error("Invalid item: phoneName and positive quantity required")
       }
     }
 
@@ -32,23 +35,31 @@ export class OrderService {
       const reservedStatusId = statusRes.rows[0].status_id;
 
       let totalPrice = 0;
-      for (const { phone_id, quantity } of orderRequest.items) {
+      for (const { phoneName, quantity } of orderRequest.items) {
+
+        const result = await pool.query<{ phone_id: number, price: string }>(
+          `SELECT phone_id, 
+            price::text 
+            FROM phones
+            WHERE model = $1
+          `,
+          [phoneName]
+        );
+        if (result.rowCount === 0) {
+          throw new Error(`Phone not found for phone name=${phoneName}`);
+        }
+        const phone_id = result.rows[0].phone_id;
+
         const isAvailable = await stockService.checkAvailability(phone_id, quantity);
         if (!isAvailable) {
           throw new Error(
-            `Not enough stock for phone ${phone_id}: requested ${quantity}.`
+            `Not enough stock for phone ${phoneName}: requested ${quantity}.`
           );
         }
 
         await stockService.reserveStock(phone_id, quantity);
 
-        const priceRes = await client.query<{ price: string }>(
-          `SELECT price::text 
-             FROM phones 
-            WHERE phone_id = $1`,
-          [phone_id]
-        );
-        const unitPrice = parseFloat(priceRes.rows[0].price);
+        const unitPrice = parseFloat(result.rows[0].price);
         totalPrice += unitPrice * quantity;
       }
 
@@ -60,17 +71,106 @@ export class OrderService {
       );
       const orderId = orderRes.rows[0].order_id;
 
-      for (const { phone_id, quantity } of orderRequest.items) {
+      for (const { phoneName, quantity } of orderRequest.items) {
+        const result = await pool.query<{ phone_id: number }>(
+          `SELECT phone_id
+            FROM phones
+            WHERE model = $1
+          `,
+          [phoneName]
+        );
+        
         await client.query(
           `INSERT INTO order_items(order_id, phone_id, quantity)
                VALUES ($1, $2, $3)`,
-          [orderId, phone_id, quantity]
+          [orderId, result.rows[0].phone_id, quantity]
         );
       }
       const yourAccountNumber = await paymentService.getAccountNumber();
 
+      const retailTransaction = await createRetailTransaction({
+        from: yourAccountNumber,
+        to: orderRequest.accountNumber,
+        amountCents: totalPrice,
+        reference: orderId
+      });
+
+      if (!retailTransaction) {
+        throw new Error(`Payment for phone failed`);
+      }
+
+      await this.deliverGoods(orderId);
+
       await client.query("COMMIT");
       return { order_id: orderId, price: totalPrice, accountNumber: yourAccountNumber  };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async deliverGoods(orderId: number): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const quantityRes = await pool.query<{ total: number }>(
+        `
+        SELECT COALESCE(SUM(quantity), 0) AS total
+          FROM order_items
+        WHERE order_id = $1
+        `,
+        [orderId]
+      );
+
+      const pickupRes = await createPickup({
+        quantity: quantityRes.rows[0].total,
+        pickup_from: "pear-company",
+        delivery_to: "customer",
+      });
+      if (!pickupRes) {
+        throw new Error(`Status 'Processing' not defined in status table.`);
+      }
+
+      const { rows: statusRows } = await client.query<{ status_id: number }>(
+        `SELECT status_id
+          FROM status
+          WHERE description = 'Processing'`
+      );
+      if (statusRows.length === 0) {
+        throw new Error(`Status 'reserved' not defined in status table.`);
+      }
+      const pendingStatusId = statusRows[0].status_id;
+
+      await client.query(
+        `
+        INSERT INTO consumer_deliveries
+          (order_id, delivery_reference, cost, status, account_id)
+        VALUES
+          ($1, $2, $3, $4, $5)
+        `,
+        [
+          orderId,
+          pickupRes.refernceno,
+          pickupRes.amount,      
+          pendingStatusId,
+          pickupRes.accountNumber, 
+        ]
+      );
+
+      console.log(`Created consumer_delivery with reference ${pickupRes}`);
+
+      await createTransaction({
+        to_account_number: pickupRes.accountNumber,
+        to_bank_name: "commercial-bank",
+        amount: pickupRes?.amount || 0,
+        description: `Payment for delivery #${ pickupRes?.refernceno}`
+      });
+      console.log(`Payment for delivery #${ pickupRes?.refernceno}`);
+
+      await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK");
       throw err;

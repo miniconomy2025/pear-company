@@ -378,6 +378,7 @@ jobs:
           CASE_BASE_URL=http://case-supplier-api.projects.bbdgrad.com/api
           ELECTRONICS_BASE_URL=http://electronics-supplier-api.projects.bbdgrad.com
           SCREEN_BASE_URL=https://screen-supplier-api.projects.bbdgrad.com
+          RETAIL_BANK_BASE_URL=https://retail-bank-api.projects.bbdgrad.com
           TEST=TESTING VARIABLES
           EOF
           
