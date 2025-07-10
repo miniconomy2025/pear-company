@@ -336,23 +336,6 @@ jobs:
             echo "PM2 version: $(pm2 --version)"
             echo "Nginx status: $(sudo systemctl is-active nginx)"
           '
-
-      - name: Debug secrets (TEMPORARY - REMOVE AFTER FIXING)
-        run: |
-          echo "Debugging secrets retrieval..."
-          echo "POSTGRES_USER: '${{ env.POSTGRES_USER }}'"
-          echo "POSTGRES_USER length: ${#POSTGRES_USER}"
-          echo "POSTGRES_PASS: '${{ env.POSTGRES_PASS }}'"
-          echo "POSTGRES_PASS length: ${#POSTGRES_PASS}"
-          echo "Expected password: enjoyBBDFD2993"
-          echo "Expected length: 15"
-          
-          # Check if there are any hidden characters
-          echo "POSTGRES_PASS hex dump:"
-          echo -n "${{ env.POSTGRES_PASS }}" | xxd
-        env:
-          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-          POSTGRES_PASS: ${{ env.POSTGRES_PASS }}
         
       - name: Set env variables (FIXED - Direct secret transfer)
         run: |
