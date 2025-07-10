@@ -6,9 +6,9 @@ env:
 on:
   push:
     branches:
-      # - main
-      - dev
-      - pipeline-setup
+      - main
+      # - dev
+      # - pipeline-setup
 
 jobs:
   terraform:
