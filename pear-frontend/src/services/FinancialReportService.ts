@@ -29,7 +29,7 @@ export interface FinancialData {
 
 export const getFinancialReport = async (): Promise<FinancialData> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/reports/financial`);
+    const res = await fetch(`${API_BASE_URL}/internal-api/reports/financial`);
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }

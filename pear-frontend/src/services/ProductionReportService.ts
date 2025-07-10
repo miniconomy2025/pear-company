@@ -7,7 +7,7 @@ export interface ProductionItem {
 
 export const getProductionReport = async (): Promise<ProductionItem[]> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/reports/production`);
+    const res = await fetch(`${API_BASE_URL}/internal-api/reports/production`);
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }

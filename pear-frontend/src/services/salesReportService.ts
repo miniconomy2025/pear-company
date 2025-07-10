@@ -9,7 +9,7 @@ export interface SalesReportItem {
 
 export const getSalesReport = async (from: string, to: string): Promise<SalesReportItem[]> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/reports/sales?from=${from}&to=${to}`);
+    const res = await fetch(`${API_BASE_URL}/internal-api/reports/sales?from=${from}&to=${to}`);
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }
