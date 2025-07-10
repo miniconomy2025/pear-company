@@ -237,3 +237,14 @@ export interface CommercialBankAccountResponse {
   account_number: string
 }
 
+export interface RetailBankTransationRequest {
+  from: string,
+  to: string,
+  amountCents: number,
+  reference: number
+}
+
+export interface RetailBankTransationResponse {
+  transferId: string,
+  creationStatus: string
+}

@@ -6,6 +6,7 @@ export interface PublicOrderItem {
 }
 
 export interface PublicOrderRequest {
+  accountNumber: string
   items: PublicOrderItem[]
 }
 
