@@ -197,52 +197,50 @@ jobs:
       - name: Setup nginx proxy on frontend
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
-          sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            # Create nginx config
+            sudo tee /etc/nginx/sites-enabled/default > /dev/null << "EOF_NGINX"
           server {
-          listen 80;
-          server_name pear-company.projects.bbdgrad.com;
+              listen 80;
+              server_name pear-company.projects.bbdgrad.com;
 
-          # Required for Certbot's HTTP-01 challenge
-          location /.well-known/acme-challenge/ {
-              root /var/www/html;
+              # Required for Certbot HTTP-01 challenge
+              location /.well-known/acme-challenge/ {
+                  root /var/www/html;
+              }
+
+              location / {
+                  proxy_pass http://localhost:3000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_cache_bypass $http_upgrade;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
           }
-
-          location / {
-              proxy_pass http://localhost:3000; # Front-end
-              proxy_http_version 1.1;
-              proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection 'upgrade';
-              proxy_set_header Host $host;
-              proxy_cache_bypass $http_upgrade;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-          }
-
-              listen 443 ssl; # managed by Certbot
-              ssl_certificate /etc/letsencrypt/live/pear-company.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
-              ssl_certificate_key /etc/letsencrypt/live/pear-company.projects.bbdgrad.com/privkey.pem; # managed by Certbot
-              include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-              ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
-
-          }
-          server {
-              if ($host = pear-company.projects.bbdgrad.com) {
-                  return 301 https://$host$request_uri;
-              } # managed by Certbot
-
-
-          listen 80;
-          server_name pear-company.projects.bbdgrad.com;
-              return 404; # managed by Certbot
-                  }
-          NGINX_CONF
-          EOF
-              
-            # Test and reload nginx
-            sudo nginx -t && sudo systemctl reload nginx
+          EOF_NGINX
+            
+            # Test nginx config
+            sudo nginx -t
+            
+            # Ensure nginx is running before reload
+            sudo systemctl start nginx
+            sudo systemctl enable nginx
+            
+            # Check if nginx is active
+            if sudo systemctl is-active --quiet nginx; then
+              echo "Nginx is active, reloading..."
+              sudo systemctl reload nginx
+            else
+              echo "Nginx is not active, starting..."
+              sudo systemctl start nginx
+            fi
+            
+            # Verify nginx status
+            sudo systemctl status nginx --no-pager
           '
 
   build-api:
@@ -391,56 +389,50 @@ jobs:
       - name: Setup nginx proxy on API EC2
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-
-          ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
-          sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            # Create nginx config
+            sudo tee /etc/nginx/sites-enabled/default > /dev/null << "EOF_NGINX"
           server {
               listen 80;
               server_name pear-company-api.projects.bbdgrad.com;
-              return 301 https://$host$request_uri;
-          }
 
-          map $ssl_client_s_dn $is_valid_ou {
-              default no;
-              ~OU=sumsang-company yes;
-          }
-
-          server {
-              listen 443 ssl;
-              server_name pear-company-api.projects.bbdgrad.com;
-                
-              ssl_certificate /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
-              ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
-              # Client cert validation (mTLS)
-              ssl_client_certificate /etc/nginx/certificates/root-ca.crt;
-              ssl_verify_client on;
-
-              if ($is_valid_ou = no) {
-                  return 403;
+              # Required for Certbot HTTP-01 challenge
+              location /.well-known/acme-challenge/ {
+                  root /var/www/html;
               }
 
               location / {
-                  proxy_pass http://localhost:3000;
+                  proxy_pass http://localhost:5000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_cache_bypass $http_upgrade;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
               }
           }
-
-          # TLS only, no mTLS — internal frontend uses this
-          server {
-              listen 444 ssl;
-              server_name pear-company-api.projects.bbdgrad.com;
-
-              ssl_certificate /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/fullchain.pem; # managed by Certbot
-              ssl_certificate_key /etc/letsencrypt/live/pear-company-api.projects.bbdgrad.com/privkey.pem; # managed by Certbot
-
-              location / {
-                  proxy_pass http://localhost:3000;
-              }
-          }
-          NGINX_CONF
-          EOF
+          EOF_NGINX
             
-            # Test and reload nginx
-            sudo nginx -t && sudo systemctl reload nginx
+            # Test nginx config
+            sudo nginx -t
+            
+            # Ensure nginx is running before reload
+            sudo systemctl start nginx
+            sudo systemctl enable nginx
+            
+            # Check if nginx is active
+            if sudo systemctl is-active --quiet nginx; then
+              echo "Nginx is active, reloading..."
+              sudo systemctl reload nginx
+            else
+              echo "Nginx is not active, starting..."
+              sudo systemctl start nginx
+            fi
+            
+            # Verify nginx status
+            sudo systemctl status nginx --no-pager
           '
 
   issue-certificates-web:
@@ -486,8 +478,13 @@ jobs:
           # Test nginx config after SSL
           sudo nginx -t
           
-          # Reload nginx
-          sudo systemctl reload nginx
+          # Ensure nginx is running and reload
+          sudo systemctl start nginx
+          if sudo systemctl is-active --quiet nginx; then
+            sudo systemctl reload nginx
+          else
+            sudo systemctl start nginx
+          fi
           
           echo "SSL certificate issued for web frontend"
         '
@@ -535,8 +532,13 @@ jobs:
           # Test nginx config after SSL
           sudo nginx -t
           
-          # Reload nginx
-          sudo systemctl reload nginx
+          # Ensure nginx is running and reload
+          sudo systemctl start nginx
+          if sudo systemctl is-active --quiet nginx; then
+            sudo systemctl reload nginx
+          else
+            sudo systemctl start nginx
+          fi
           
           echo "SSL certificate issued for API"
         '
@@ -567,7 +569,7 @@ jobs:
             API_EC2_PRIVATE_KEY, apiprivatekey
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
-      
+            
       - name: Export secrets as environment variables
         run: |
           echo "POSTGRES_USER=${{ env.POSTGRES_USER }}" >> $GITHUB_ENV
@@ -587,9 +589,7 @@ jobs:
           else
             DB_HOST_ONLY="$DB_HOST"
           fi
-
           echo "Connecting to: $DB_HOST_ONLY"
-
           docker run --rm \
             --volume ${{ github.workspace }}/migrations:/flyway/sql:ro \
             redgate/flyway \
@@ -597,5 +597,3 @@ jobs:
             -user="${{ env.POSTGRES_USER }}" \
             -password="${{ env.POSTGRES_PASS }}" \
             migrate
-
-
