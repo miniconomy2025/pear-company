@@ -198,7 +198,7 @@ jobs:
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
 
-          ssh -o StrictHostKeyChecking=no -i webprivatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
           sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
           server {
           listen 80;
@@ -392,7 +392,7 @@ jobs:
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
 
-          ssh -o StrictHostKeyChecking=no -i apiprivatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem ubuntu@$EC2_HOST 'bash -s' <<'EOF'
           sudo tee /etc/nginx/sites-enabled/default > /dev/null <<'NGINX_CONF'
           server {
               listen 80;
