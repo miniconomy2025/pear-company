@@ -186,7 +186,7 @@ resource "aws_budgets_budget" "pear_budget" {
   budget_type       = "COST"
   limit_amount      = "25"
   limit_unit        = "USD"
-  time_period_end   = "2025-07-11_00:00"
+  time_period_end   = "2025-07-12_00:00"
   time_period_start = "2025-07-01_00:00"
   time_unit         = "MONTHLY"
   
