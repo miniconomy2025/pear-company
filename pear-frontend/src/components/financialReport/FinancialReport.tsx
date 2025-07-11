@@ -41,12 +41,11 @@ const FinancialReport: React.FC = () => {
         <p><strong>Total Revenue:</strong> Ð{financialData.revenue.toLocaleString()}</p>
         <p><strong>Total Expenses:</strong> Ð{totalExpenses.toLocaleString()}</p>
         <p><strong>Net Profit:</strong> Ð{netProfit.toLocaleString()}</p>
-        <p><strong>Loan Status:</strong> Borrowed: Ð{financialData.loanStatus.borrowed}, Repaid: Ð{financialData.loanStatus.repaid}, Remaining: Ð{financialData.loanStatus.remaining}</p>
       </div>
 
       <div className="chart-section">
         <h3>Expenses Breakdown</h3>
-        <PieChart width={400} height={300}>
+        <PieChart width={600} height={300}>
           <Pie
             data={expenseData}
             cx="50%"

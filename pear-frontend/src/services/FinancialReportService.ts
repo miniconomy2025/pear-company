@@ -1,10 +1,9 @@
 import { API_BASE_URL } from '../config/apiConfig';
 
 export interface Expenses {
-//   manufacturing: number;
+  manufacturing: number;
   logistics: number;
   loans: number;
-//   equipment: number;
   supply: number;
 }
 
@@ -23,7 +22,6 @@ export interface ProfitMarginsData {
 export interface FinancialData {
   revenue: number;
   expenses: Expenses;
-  loanStatus: LoanStatus;
   profitMargins: ProfitMarginsData[];
 }
 

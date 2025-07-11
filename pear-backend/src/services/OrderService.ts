@@ -336,7 +336,11 @@ export class OrderService {
     FROM order_items oi
     JOIN orders o ON o.order_id = oi.order_id
     JOIN phones p ON p.phone_id = oi.phone_id
-      WHERE o.created_at BETWEEN $1 AND $2
+      WHERE o.status IN (
+        SELECT s.status_id FROM status s WHERE description IN ('Completed', 'Shipped', 'Delivered')
+        )
+      AND o.created_at BETWEEN $1 AND $2
+
     GROUP BY p.model, DATE(o.created_at)
     ORDER BY date
   `;
