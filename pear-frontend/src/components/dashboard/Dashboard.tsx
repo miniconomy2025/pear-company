@@ -20,7 +20,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const salesData = await getSalesReport('2025-07-01','2025-07-30');
+      const salesData = await getSalesReport('2025-07-01','2025-12-30');
       const totalPhones = await getProductionReport();
       const logistics = await getConsumerPendingDeliveries();
 

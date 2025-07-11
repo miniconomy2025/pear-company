@@ -12,7 +12,7 @@ import './SalesReport.css';
 const SalesReport: React.FC = () => {
   const [data, setData] = useState<SalesReportItem[]>([]);
   const [fromDate, setFromDate] = useState<string>('2025-07-01');
-  const [toDate, setToDate] = useState<string>('2025-07-30');
+  const [toDate, setToDate] = useState<string>('2025-12-30');
 
   const getFilteredData = useCallback(async () => {
     const sales = await getSalesReport(fromDate, toDate)
