@@ -377,7 +377,7 @@ jobs:
           PORT=5000
           SIMULATION_API_BASE_URL=https://thoh-api.projects.bbdgrad.com
           COMMERCIAL_BANK_BASE_URL=https://commercial-bank-api.projects.bbdgrad.com
-          BULK_LOGISTICS_BASE_URL=https://bulk-logistics-api.projects.bbdgrad.com/api
+          BULK_LOGISTICS_BASE_URL=https://bulk-logistics-api.projects.bbdgrad.com
           CUSTOMER_LOGISTICS_BASE_URL=https://consumer-logistics.projects-api.bbdgrad.com/api
           CASE_BASE_URL=http://case-supplier-api.projects.bbdgrad.com/api
           ELECTRONICS_BASE_URL=http://electronics-supplier-api.projects.bbdgrad.com
