@@ -68,9 +68,10 @@ export interface CasesGetOrderResponse {
 }
 
 export interface CustomersPickUpRequest {
+  companyName: string,
   quantity: number,
-  pickup_from: string,
-  delivery_to: string,
+  recipient: string,
+  modelName: string
 }
 
 export interface CustomersPickUpResponse {
