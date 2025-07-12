@@ -4,13 +4,13 @@ class SimulatedClock {
 
   private realWorldEpochStartTimeMs: number | null = null
 
-  setSimulationStartTime(realEpochMs: number, simulatedStart: Date): void {
-    this.realWorldEpochStartTimeMs = realEpochMs
+  setSimulationStartTime(simulatedStart: Date): void {
+    // this.realWorldEpochStartTimeMs = realEpochMs
     this.simulatedStartDate = new Date(simulatedStart) 
     this.simulatedStartDate.setUTCHours(0, 0, 0, 0) 
     this.currentSimulatedDayOffset = 0 
     console.log(
-      `SimulatedClock initialized: Real-world epoch start: ${new Date(realEpochMs).toISOString()}, Simulated start date: ${this.simulatedStartDate.toISOString()}`,
+      `SimulatedClock initialized: Real-world epoch start, Simulated start date: ${this.simulatedStartDate.toISOString()}`,
     )
   }
 
@@ -27,8 +27,8 @@ class SimulatedClock {
       throw new Error("SimulatedClock not initialized. Call setSimulationStartTime first.")
     }
     const date = new Date(this.simulatedStartDate)
-    date.setDate(date.getDate() + this.currentSimulatedDayOffset)
-    date.setUTCHours(0, 0, 0, 0)
+    // date.setDate(date.getDate() + this.currentSimulatedDayOffset)
+    // date.setUTCHours(0, 0, 0, 0)
     return date
   }
 
