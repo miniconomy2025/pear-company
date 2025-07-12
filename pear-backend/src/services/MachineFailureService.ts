@@ -6,7 +6,7 @@ export class MachineFailureService {
   async failedMachine(machines: MachineFailureRequest): Promise<void> {
     const client = await pool.connect()
     try {
-        await pool.query('BEGIN');
+        await client.query('BEGIN');
         const timestamp = `${machines.simulationDate} ${machines.simulationTime}`;
 
         const retireQuery = `
@@ -25,8 +25,8 @@ export class MachineFailureService {
         WHERE m.machine_id = tr.machine_id
         RETURNING m.machine_id;
         `;
-        const updateRes = await pool.query(retireQuery, [machines.machineName, machines.failureQuantity, timestamp]);
-        await pool.query('COMMIT');
+        const updateRes = await client.query(retireQuery, [machines.machineName, machines.failureQuantity, timestamp]);
+        await client.query('COMMIT');
     } catch (error) {
         console.error("Error getting machine status:", error)
     } finally {

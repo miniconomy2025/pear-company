@@ -1,7 +1,7 @@
 // Public API Types - matching the OpenAPI specification exactly
 
 export interface PublicOrderItem {
-  phoneName: string
+  model: string
   quantity: number
 }
 
@@ -33,7 +33,7 @@ export interface PaymentNotification {
 }
 
 export interface DeliveryConfirmation {
-  delivery_reference: number
+  delivery_reference: string
 }
 
 export interface SimulationResponse {
@@ -61,3 +61,20 @@ export interface MachineFailureRequest {
   simulationDate: string,
   simulationTime: string
 }
+
+export interface PickupRequest {
+  type: "PICKUP";
+  id: string;
+  quantity: number;
+}
+
+export interface DeliveryRequest {
+  type: "DELIVERY";
+  id: number;
+  items: {
+    itemName: string;
+    quantity: number;
+    measurementType: string; // "UNIT" | "KG"
+  }[];
+}
+

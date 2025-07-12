@@ -255,7 +255,7 @@ export class MachinePurchasingService {
     }
   }
 
-  async confirmMachineDelivery(deliveryReference: number): Promise<boolean> {
+  async confirmMachineDelivery(deliveryReference: string): Promise<boolean> {
     return await this.machineLogistics.confirmMachineDelivery(deliveryReference)
   }
 

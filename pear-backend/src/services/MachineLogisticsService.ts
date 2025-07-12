@@ -142,7 +142,7 @@ export class MachineLogisticsService {
     }
   }
 
-  async confirmMachineDelivery(deliveryReference: number): Promise<boolean> {
+  async confirmMachineDelivery(deliveryReference: string): Promise<boolean> {
     const client = await pool.connect()
     try {
       await client.query("BEGIN")

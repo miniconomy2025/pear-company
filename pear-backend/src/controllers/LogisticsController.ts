@@ -1,5 +1,5 @@
 import type { Request, Response } from "express"
-import type { DeliveryConfirmation } from "../types/publicApi.js"
+import type { DeliveryConfirmation, PickupRequest, DeliveryRequest } from "../types/publicApi.js"
 import type { LogisticsService } from "../services/LogisticsService.js"
 
 export class LogisticsController {
@@ -65,4 +65,28 @@ export class LogisticsController {
       res.status(500).json({ error: "Internal server error" });
     }
   };
+
+  handleLogistics = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { type } = req.body;
+    if (type === "DELIVERY") {
+      const collection: DeliveryConfirmation = req.body;
+      await this.logisticsService.confirmGoodsDelivered(collection);
+      res.status(200).json({ message: "Bulk delivery recorded" });
+    } else if (type === "PICKUP") {
+      const delivery: DeliveryConfirmation = req.body;
+      await this.logisticsService.confirmGoodsCollection(delivery);
+      res.status(200).json({ message: "Consumer pickup recorded" });
+    } else {
+      res.status(400).json({ error: "Invalid or missing type (must be DELIVERY or PICKUP)" });
+    }
+  } catch (error) {
+    console.error("Error in /logistics:", error);
+    res.status(400).json({
+      error: "Invalid logistics data",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
+
 }

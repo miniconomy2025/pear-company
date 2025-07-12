@@ -48,19 +48,8 @@ export class SimulationService {
       await this.cleanSimulationData();
 
       console.log("Fetching simulation start time from external Simulation API...")
-      const thohResponse = await getUnixEpochStartTime()
-
-      if (!thohResponse || !thohResponse.unixEpochStartTime) {
-        throw new Error("Did not receive a valid epoch start time from Simulation API.")
-      }
-
-      const thohEpochStartMs = Number.parseInt(thohResponse.unixEpochStartTime, 10)
-      if (isNaN(thohEpochStartMs)) {
-        throw new Error("Invalid epoch time received from Simulation API (not a number).")
-      }
-      
-
-      SimulatedClock.setSimulationStartTime(thohEpochStartMs, new Date("2050-01-01T00:00:00Z"))
+     
+      SimulatedClock.setSimulationStartTime(new Date("2050-01-01T00:00:00Z"))
 
       await SimulatedClock.saveCurrentDateToDatabase()
       this.simulationRunning = true
