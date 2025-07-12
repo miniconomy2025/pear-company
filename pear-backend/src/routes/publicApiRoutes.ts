@@ -20,15 +20,15 @@ export const createPublicApiRoutes = (): Router => {
   router.get("/stock", stockController.getStock)
 
   // Order management endpoints
-  router.post("/order", orderController.createOrder)
-  router.post("/payment-made", orderController.processPayment)
+  router.post("/orders", orderController.createOrder)
 
   // Logistics endpoints
-  router.post("/goods-delivered", logisticsController.confirmGoodsDelivered)
-  router.post("/goods-collection", logisticsController.confirmGoodsCollection)
+  router.post("/logistics/notification", logisticsController.confirmGoodsDelivered)
+  router.post("/logistics", logisticsController.handleLogistics)
 
   // Simulation control endpoints
-  router.post("/simulation/start", simulationController.startSimulation)
+  router.post("/simulation", simulationController.startSimulation)
+  router.delete("/simulation", simulationController.startSimulation)
 
   // Machine failure endpoint
   router.post("/machines/failure", machineFailureController.failedMachine)

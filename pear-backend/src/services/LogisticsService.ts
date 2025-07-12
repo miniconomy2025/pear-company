@@ -20,21 +20,112 @@ export class LogisticsService {
         throw new Error(`Failed to confirm machine delivery for reference ${delivery.delivery_reference}`)
       }
     } else {
-      // TODO: Handle parts delivery confirmation
-      // TODO: Find bulk_delivery record by delivery_reference
-      // TODO: Update units_received instead of status
-      // TODO: Update parts inventory
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        // 1. Lookup bulk delivery, join to parts_purchases and parts to get part_id
+        const deliveryResult = await client.query(`
+          SELECT bd.*, pp.part_id
+          FROM bulk_deliveries bd
+          JOIN parts_purchases pp ON bd.parts_purchase_id = pp.parts_purchase_id
+          WHERE bd.delivery_reference = $1
+        `, [delivery.delivery_reference]);
+
+        if (deliveryResult.rowCount === 0) {
+          throw new Error(`No bulk delivery found for reference ${delivery.delivery_reference}`);
+        }
+        const bulkDelivery = deliveryResult.rows[0];
+
+        // 2. Update units_received in bulk_deliveries (assume all received)
+        await client.query(`
+          UPDATE bulk_deliveries
+          SET units_received = pp.quantity -- or another field if tracking how many units were ordered
+          FROM parts_purchases pp
+          WHERE bulk_deliveries.delivery_reference = $1
+            AND bulk_deliveries.parts_purchase_id = pp.parts_purchase_id
+        `, [delivery.delivery_reference]);
+
+        // 3. Update inventory for that part_id
+        await client.query(`
+          UPDATE inventory
+          SET quantity_available = quantity_available + pp.quantity
+          FROM parts_purchases pp, bulk_deliveries bd
+          WHERE inventory.part_id = pp.part_id
+            AND pp.parts_purchase_id = bd.parts_purchase_id
+            AND bd.delivery_reference = $1
+        `, [delivery.delivery_reference]);
+
+        await client.query('COMMIT');
+        console.log(
+          `Bulk delivery confirmed for reference ${delivery.delivery_reference} and inventory updated for part_id ${bulkDelivery.part_id}`
+        );
+      } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error confirming bulk goods delivered:", error);
+        throw error;
+      } finally {
+        client.release();
+      }
     }
   }
 
   async confirmGoodsCollection(collection: DeliveryConfirmation): Promise<void> {
-    // TODO: Find consumer_delivery record by delivery_reference
-    // TODO: Update units_collected instead of status
-    // TODO: Update phone stock
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
+      // 1. Find consumer_delivery by delivery_reference
+      const deliveryResult = await client.query(
+        `SELECT * FROM consumer_deliveries WHERE delivery_reference = $1`,
+        [collection.delivery_reference]
+      );
+      if (deliveryResult.rowCount === 0) {
+        throw new Error(`No consumer delivery found for reference ${collection.delivery_reference}`);
+      }
+      const consumerDelivery = deliveryResult.rows[0];
+
+      // 2. Get the order and all order items for this delivery
+      const orderId = consumerDelivery.order_id;
+      const orderItemsResult = await client.query(
+        `SELECT * FROM order_items WHERE order_id = $1`,
+        [orderId]
+      );
+      const orderItems = orderItemsResult.rows;
+
+      // 3. Update units_collected to total quantity collected
+      // (Assuming it's the sum of all items in the order)
+      const totalCollected = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+
+      await client.query(
+        `UPDATE consumer_deliveries
+        SET units_collected = $1
+        WHERE delivery_reference = $2`,
+        [totalCollected, collection.delivery_reference]
+      );
+
+      // 4. Update phone stock for each item in the order
+      for (const item of orderItems) {
+        await client.query(
+          `UPDATE phones
+          SET quantity = quantity + $1
+          WHERE phone_id = $2`,
+          [item.quantity, item.phone_id]
+        );
+      }
+
+      await client.query('COMMIT');
+      console.log(`Consumer delivery ${collection.delivery_reference} collected and phone stock updated.`);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error("Error confirming goods collection:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
-  private async isMachineDeliveryReference(deliveryReference: number): Promise<boolean> {
+  private async isMachineDeliveryReference(deliveryReference: string): Promise<boolean> {
     const client = await pool.connect()
     try {
       const result = await client.query(`SELECT 1 FROM machine_deliveries WHERE delivery_reference = $1`, [
