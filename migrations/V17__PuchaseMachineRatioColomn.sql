@@ -1,2 +1,6 @@
+
 ALTER TABLE machine_purchases
-ADD COLUMN ratio VARCHAR(200) NOT NULL;
+MODIFY COLUMN ratio VARCHAR(100) NOT NULL;
+
+ALTER TABLE consumer_deliveries 
+MODIFY COLUMN delivery_reference TYPE VARCHAR(100);
