@@ -146,7 +146,6 @@ export class PartsInventoryService {
         `SELECT part_id FROM parts WHERE name = $1`,
         [part]
       );
-      console.log('logging', partRes)
       const partId = partRes.rows[0].part_id;
       
       const refRes = await client.query<{ nextval: number }>(

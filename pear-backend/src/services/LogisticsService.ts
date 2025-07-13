@@ -71,8 +71,7 @@ export class LogisticsService {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      console.log('wuiovnwinfvwpanefni')
-
+      
       // 1. Find consumer_delivery by delivery_reference
       const deliveryResult = await client.query(
         `SELECT * FROM consumer_deliveries WHERE delivery_reference = $1`,
@@ -90,21 +89,18 @@ export class LogisticsService {
         [orderId]
       );
       const orderItems = orderItemsResult.rows;
-      console.log('wuiovnwinfvwpanefni')
-
+     
       // 3. Update units_collected to total quantity collected
       // (Assuming it's the sum of all items in the order)
       const totalCollected = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-      console.log('wuiovnwinfvwpanefni')
-
+      
       await client.query(
         `UPDATE consumer_deliveries
         SET units_collected = $1
         WHERE delivery_reference = $2`,
         [totalCollected, delivery_reference]
       );
-      console.log('wuiovnwinfvwpanefni')
-
+      
       // 4. Update phone stock for each item in the order
       for (const item of orderItems) {
         await client.query(
@@ -114,8 +110,7 @@ export class LogisticsService {
           [item.quantity, item.phone_id]
         );
       }
-      console.log('wuiovnwinfvwpanefni')
-
+      
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
