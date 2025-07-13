@@ -29,7 +29,9 @@ function handleError(err: unknown) {
 
 export async function createAccount(): Promise<CommercialBankAccountResponse | undefined> {
   try {
-    const res = await client.post("/api/account", {});
+    const res = await client.post("/api/account", {
+      notification_url: "https://pear-company-api.projects.bbdgrad.com/public-api"
+    });
     return res.data;
   } catch (err) {
     handleError(err);

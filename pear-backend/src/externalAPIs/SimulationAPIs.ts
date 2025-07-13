@@ -72,7 +72,6 @@ export async function confirmMachinePayment(orderId: number): Promise<Simulation
 }
 
 export async function receivePhone(request: ReceivePhoneRequest): Promise<void> {
-  console.log('eofna[eaqnf')
   try {
     await client.post("/receive-phone", request)
   } catch (err) {
