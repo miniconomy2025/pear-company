@@ -26,7 +26,7 @@ function handleError(err: unknown) {
 
 export async function createPickup(pickUp: CustomersPickUpRequest): Promise<CustomersPickUpResponse | undefined> {
   try {
-    const res = await client.post("/api/pickup", pickUp);
+    const res = await client.post("/api/pickups", pickUp);
     return res.data;
   } catch (err) {
     handleError(err);
