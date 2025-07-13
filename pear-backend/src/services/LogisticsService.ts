@@ -9,15 +9,15 @@ export class LogisticsService {
 
   constructor(private machinePurchasingService: MachinePurchasingService) {} 
 
-  async confirmGoodsDelivered(delivery: DeliveryConfirmation): Promise<void> {
+  async confirmGoodsDelivered(delivery_reference: string): Promise<void> {
 
-    const isMachineDelivery = await this.isMachineDeliveryReference(delivery.delivery_reference)
+    const isMachineDelivery = await this.isMachineDeliveryReference(delivery_reference)
 
     if (isMachineDelivery) {
-      const success = await this.machinePurchasingService.confirmMachineDelivery(delivery.delivery_reference)
+      const success = await this.machinePurchasingService.confirmMachineDelivery(delivery_reference)
 
       if (!success)  {
-        throw new Error(`Failed to confirm machine delivery for reference ${delivery.delivery_reference}`)
+        throw new Error(`Failed to confirm machine delivery for reference ${delivery_reference}`)
       }
     } else {
       const client = await pool.connect();
@@ -30,10 +30,10 @@ export class LogisticsService {
           FROM bulk_deliveries bd
           JOIN parts_purchases pp ON bd.parts_purchase_id = pp.parts_purchase_id
           WHERE bd.delivery_reference = $1
-        `, [delivery.delivery_reference]);
+        `, [delivery_reference]);
 
         if (deliveryResult.rowCount === 0) {
-          throw new Error(`No bulk delivery found for reference ${delivery.delivery_reference}`);
+          throw new Error(`No bulk delivery found for reference ${delivery_reference}`);
         }
         const bulkDelivery = deliveryResult.rows[0];
 
@@ -44,7 +44,7 @@ export class LogisticsService {
           FROM parts_purchases pp
           WHERE bulk_deliveries.delivery_reference = $1
             AND bulk_deliveries.parts_purchase_id = pp.parts_purchase_id
-        `, [delivery.delivery_reference]);
+        `, [delivery_reference]);
 
         // 3. Update inventory for that part_id
         await client.query(`
@@ -54,7 +54,7 @@ export class LogisticsService {
           WHERE inventory.part_id = pp.part_id
             AND pp.parts_purchase_id = bd.parts_purchase_id
             AND bd.delivery_reference = $1
-        `, [delivery.delivery_reference]);
+        `, [delivery_reference]);
 
         await client.query('COMMIT');
       } catch (error) {
@@ -67,18 +67,19 @@ export class LogisticsService {
     }
   }
 
-  async confirmGoodsCollection(collection: DeliveryConfirmation): Promise<void> {
+  async confirmGoodsCollection(delivery_reference: string): Promise<void> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+      console.log('wuiovnwinfvwpanefni')
 
       // 1. Find consumer_delivery by delivery_reference
       const deliveryResult = await client.query(
         `SELECT * FROM consumer_deliveries WHERE delivery_reference = $1`,
-        [collection.delivery_reference]
+        [delivery_reference]
       );
       if (deliveryResult.rowCount === 0) {
-        throw new Error(`No consumer delivery found for reference ${collection.delivery_reference}`);
+        throw new Error(`No consumer delivery found for reference ${delivery_reference}`);
       }
       const consumerDelivery = deliveryResult.rows[0];
 
@@ -89,27 +90,31 @@ export class LogisticsService {
         [orderId]
       );
       const orderItems = orderItemsResult.rows;
+      console.log('wuiovnwinfvwpanefni')
 
       // 3. Update units_collected to total quantity collected
       // (Assuming it's the sum of all items in the order)
       const totalCollected = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+      console.log('wuiovnwinfvwpanefni')
 
       await client.query(
         `UPDATE consumer_deliveries
         SET units_collected = $1
         WHERE delivery_reference = $2`,
-        [totalCollected, collection.delivery_reference]
+        [totalCollected, delivery_reference]
       );
+      console.log('wuiovnwinfvwpanefni')
 
       // 4. Update phone stock for each item in the order
       for (const item of orderItems) {
         await client.query(
-          `UPDATE phones
-          SET quantity = quantity + $1
+          `UPDATE stock
+          SET quantity_reserved = quantity_reserved - $1
           WHERE phone_id = $2`,
           [item.quantity, item.phone_id]
         );
       }
+      console.log('wuiovnwinfvwpanefni')
 
       await client.query('COMMIT');
     } catch (error) {
@@ -192,9 +197,10 @@ export class LogisticsService {
     const row = result.rows[0];
 
     const orderResult = await pool.query(
-      `SELECT phone_name
-       FROM orders
-       WHERE order_id = $1`,
+      `SELECT p.model
+        FROM order_items oi
+        JOIN phones p ON oi.phone_id = p.phone_id
+        WHERE oi.order_id = $1`,
       [row.order_id]
     );
     if (orderResult.rowCount === 0) {
@@ -202,10 +208,9 @@ export class LogisticsService {
     }
     const order = orderResult.rows[0];
 
-
     const request: ReceivePhoneRequest = {
       accountNumber: row.account_number,
-      phoneName: order.phone_name,
+      phoneName: order.model,
       id: row.delivery_reference,
       description: `Phone delivery for order ${row.order_id}`,
     };

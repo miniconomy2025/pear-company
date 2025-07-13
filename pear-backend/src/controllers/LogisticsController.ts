@@ -5,34 +5,6 @@ import type { LogisticsService } from "../services/LogisticsService.js"
 export class LogisticsController {
   constructor(private logisticsService: LogisticsService) {}
 
-  confirmGoodsDelivered = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const delivery: DeliveryConfirmation = req.body
-      await this.logisticsService.confirmGoodsDelivered(delivery)
-      res.status(200).json({ message: "Bulk delivery recorded" })
-    } catch (error) {
-      console.error("Error confirming goods delivered:", error)
-      res.status(400).json({
-        error: "Invalid delivery data",
-        message: error instanceof Error ? error.message : "Unknown error",
-      })
-    }
-  }
-
-  confirmGoodsCollection = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const collection: DeliveryConfirmation = req.body
-      await this.logisticsService.confirmGoodsCollection(collection)
-      res.status(200).json({ message: "Consumer delivery recorded" })
-    } catch (error) {
-      console.error("Error confirming goods collection:", error)
-      res.status(400).json({
-        error: "Invalid delivery data",
-        message: error instanceof Error ? error.message : "Unknown error",
-      })
-    }
-  }
-
   getBulkDeliveries = async (req: Request, res: Response) => {
     try {
       const bulkDeliveries =
@@ -70,12 +42,12 @@ export class LogisticsController {
     try {
       const { type } = req.body;
       if (type === "DELIVERY") {
-        const collection: DeliveryConfirmation = req.body;
-        await this.logisticsService.confirmGoodsDelivered(collection);
+        const { id } = req.body;
+        await this.logisticsService.confirmGoodsDelivered(id);
         res.status(200).json({ message: "Bulk delivery recorded" });
       } else if (type === "PICKUP") {
-        const delivery: DeliveryConfirmation = req.body;
-        await this.logisticsService.confirmGoodsCollection(delivery);
+        const { id } = req.body;
+        await this.logisticsService.confirmGoodsCollection(id);
         res.status(200).json({ message: "Consumer pickup recorded" });
       } else {
         res.status(400).json({ error: "Invalid or missing type (must be DELIVERY or PICKUP)" });

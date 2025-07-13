@@ -159,7 +159,7 @@ export class MachineLogisticsService {
         [deliveryReference],
       )
 
-      if (deliveryResult.rows.length === 0) {
+      if (deliveryResult.rowCount === 0) {
         throw new Error(`Machine delivery record not found for pickup request ${deliveryReference}`)
       }
 
