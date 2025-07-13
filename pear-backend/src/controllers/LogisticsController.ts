@@ -67,26 +67,36 @@ export class LogisticsController {
   };
 
   handleLogistics = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { type } = req.body;
-    if (type === "DELIVERY") {
-      const collection: DeliveryConfirmation = req.body;
-      await this.logisticsService.confirmGoodsDelivered(collection);
-      res.status(200).json({ message: "Bulk delivery recorded" });
-    } else if (type === "PICKUP") {
-      const delivery: DeliveryConfirmation = req.body;
-      await this.logisticsService.confirmGoodsCollection(delivery);
-      res.status(200).json({ message: "Consumer pickup recorded" });
-    } else {
-      res.status(400).json({ error: "Invalid or missing type (must be DELIVERY or PICKUP)" });
+    try {
+      const { type } = req.body;
+      if (type === "DELIVERY") {
+        const collection: DeliveryConfirmation = req.body;
+        await this.logisticsService.confirmGoodsDelivered(collection);
+        res.status(200).json({ message: "Bulk delivery recorded" });
+      } else if (type === "PICKUP") {
+        const delivery: DeliveryConfirmation = req.body;
+        await this.logisticsService.confirmGoodsCollection(delivery);
+        res.status(200).json({ message: "Consumer pickup recorded" });
+      } else {
+        res.status(400).json({ error: "Invalid or missing type (must be DELIVERY or PICKUP)" });
+      }
+    } catch (error) {
+      console.error("Error in /logistics:", error);
+      res.status(400).json({
+        error: "Invalid logistics data",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
     }
-  } catch (error) {
-    console.error("Error in /logistics:", error);
-    res.status(400).json({
-      error: "Invalid logistics data",
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-}
+  };
 
+  notifyLogisticsDelivered = async (req: Request, res: Response) => {
+    try {
+      const { delivery_reference } = req.body;
+      await this.logisticsService.notifyDelivery(delivery_reference);
+      res.status(201).json({ message: "Phone given" });
+    } catch (error) {
+      console.error("Error in notifyLogisticsDelivered:", error);
+      res.status(500).json({ error: "An error occurred while giving phone to person" });
+    }
+  };
 }

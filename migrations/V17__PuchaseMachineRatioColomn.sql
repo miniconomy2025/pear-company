@@ -1,0 +1,2 @@
+ALTER TABLE machine_purchases
+ADD COLUMN ratio VARCHAR(200) NOT NULL;

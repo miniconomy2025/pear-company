@@ -4,14 +4,11 @@ class SimulatedClock {
 
   private realWorldEpochStartTimeMs: number | null = null
 
-  setSimulationStartTime(simulatedStart: Date): void {
-    // this.realWorldEpochStartTimeMs = realEpochMs
+  setSimulationStartTime(realEpochMs: number, simulatedStart: Date): void {
+    this.realWorldEpochStartTimeMs = realEpochMs
     this.simulatedStartDate = new Date(simulatedStart) 
     this.simulatedStartDate.setUTCHours(0, 0, 0, 0) 
     this.currentSimulatedDayOffset = 0 
-    console.log(
-      `SimulatedClock initialized: Real-world epoch start, Simulated start date: ${this.simulatedStartDate.toISOString()}`,
-    )
   }
 
   advanceDay(): void {
@@ -19,7 +16,6 @@ class SimulatedClock {
       throw new Error("SimulatedClock not initialized. Call setSimulationStartTime first.")
     }
     this.currentSimulatedDayOffset++
-    console.log(`Simulated day advanced to: ${this.getSimulatedDate().toISOString().split("T")[0]}`)
   }
 
   getSimulatedDate(): Date {
@@ -27,8 +23,8 @@ class SimulatedClock {
       throw new Error("SimulatedClock not initialized. Call setSimulationStartTime first.")
     }
     const date = new Date(this.simulatedStartDate)
-    // date.setDate(date.getDate() + this.currentSimulatedDayOffset)
-    // date.setUTCHours(0, 0, 0, 0)
+    date.setDate(date.getDate() + this.currentSimulatedDayOffset)
+    date.setUTCHours(0, 0, 0, 0)
     return date
   }
 
@@ -77,7 +73,6 @@ class SimulatedClock {
           [this.currentSimulatedDayOffset.toString()],
         )
 
-        console.log(`Saved simulation date to database: ${dateString} (Day ${this.currentSimulatedDayOffset})`)
       } finally {
         client.release()
       }
@@ -104,9 +99,6 @@ class SimulatedClock {
 
           if (dateRow && offsetRow) {
             this.currentSimulatedDayOffset = Number.parseInt(offsetRow.value, 10)
-            console.log(
-              `Loaded simulation state from database: ${dateRow.value} (Day ${this.currentSimulatedDayOffset})`,
-            )
             return true
           }
         }

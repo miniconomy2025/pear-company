@@ -14,7 +14,7 @@ export class MachineFailureService {
             SELECT m.machine_id
             FROM machines m
             JOIN phones p ON m.phone_id = p.phone_id
-            WHERE p.name = $1
+            WHERE p.model = $1
             AND m.date_retired IS NULL
             ORDER BY m.date_acquired
             LIMIT $2

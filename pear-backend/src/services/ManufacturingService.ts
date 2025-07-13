@@ -3,7 +3,6 @@ import {pool} from "../config/database.js";
 export class ManufacturingService {
   
     async phoneManufacturing(phoneId: number, quantity: number, simulatedDate: Date): Promise<void> {
-        console.log('logging phoneManufacturing', phoneId);
         const client = await pool.connect();
         try {
             await client.query("BEGIN");
@@ -18,7 +17,6 @@ export class ManufacturingService {
                 WHERE phone_id = $1`,
                 [phoneId]
             );
-            console.log('logging', 'machinesRes', machinesRes);
             if (machinesRes.rowCount === 0) {
                 return;
             }
@@ -33,13 +31,11 @@ export class ManufacturingService {
                         quantity_available
                 FROM inventory`
             );
-            console.log('logging', 'partsRes', partsRes);
 
             const partUsage = new Map<number, number>();
             let phoneProduction = 0;
 
             for (const { machine_id, rate_per_day } of machinesRes.rows) {
-                console.log('logging', machine_id, 'machinesRes', rate_per_day);
 
                 const ratiosRes = await client.query<{
                 part_id: number;
@@ -54,7 +50,6 @@ export class ManufacturingService {
                 `,
                 [machine_id]
                 );
-                console.log('logging', 'ratiosRes', ratiosRes, machine_id);
 
                 let produced = (quantity > rate_per_day) && rate_per_day || quantity;
                 for (const { part_id, quantity_available } of partsRes.rows) {
@@ -77,10 +72,7 @@ export class ManufacturingService {
                     partUsage.set(part_id, (partUsage.get(part_id) || 0) + needed);
                 }
                 phoneProduction += produced;
-                console.log('logging', machine_id, 'machinesRes', phoneProduction, partUsage);
             }
-
-            console.log('logging', partUsage, phoneId, phoneProduction, simTime);
 
             for (const [part_id, used] of partUsage.entries()) {
                 await client.query(
@@ -90,8 +82,6 @@ export class ManufacturingService {
                 [part_id, used]
                 );
             }
-            console.log('logging', phoneId, phoneProduction, simTime);
-
             await client.query(
                 `UPDATE stock
                     SET quantity_available = quantity_available + $2,
@@ -110,7 +100,6 @@ export class ManufacturingService {
     }
 
     async calculatePhoneDemand(): Promise<Array<{ phone_id: number; demand: number, stockNeeded: number }>> {
-        console.log('logging calculatePhoneDemand');
         const client = await pool.connect();
         try {
             const maxStockLevel = 10000;
@@ -139,7 +128,6 @@ export class ManufacturingService {
     }
 
     async processManufacturing(simulatedDate: Date): Promise<void> {
-        console.log('logging processManufacturing');
         try {
             const phoneDemand = await this.calculatePhoneDemand();
             phoneDemand.sort((a, b) => a.stockNeeded - b.stockNeeded);

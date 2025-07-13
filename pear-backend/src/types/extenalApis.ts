@@ -164,7 +164,7 @@ export interface MachineItem {
 }
 
 export interface SimulationMachineResponse {
-  machines: [MachineItem]
+  machines: MachineItem[]
 }
 
 export interface LoanItems {
@@ -174,7 +174,7 @@ export interface LoanItems {
 
 export interface CommercialBankLoansResponse {
   total_due: number,
-  loans: [LoanItems]
+  loans: LoanItems[]
 }
 
 export interface CommercialBankTransationRequest {
@@ -232,7 +232,7 @@ export interface CommercialBankLoanDetailsResponse {
   interest_rate: number,
   started_at: number,
   write_off: boolean,
-  payments: [LoanPayments]
+  payments: LoanPayments[]
 }
 
 export interface CommercialBankAccountResponse {
@@ -248,4 +248,11 @@ export interface RetailBankTransationRequest {
 
 export interface RetailBankTransationResponse {
   transferId: string
+}
+
+export interface ReceivePhoneRequest {
+  accountNumber: string;
+  phoneName: string;
+  id?: string;
+  description?: string;
 }
