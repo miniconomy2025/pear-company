@@ -54,7 +54,7 @@ export async function getPickupRequest(pickupRequestId: number): Promise<BulkPic
 
 export async function getPickupRequestsByCompany(companyId: string): Promise<Array<BulkPickUpResponse> | undefined> {
   try {
-    const res = await client.get(`/pickup-request/company/${companyId}`);
+    const res = await client.get(`/api/pickup-request/company/${companyId}`);
     return res.data;
   } catch (err) {
     handleError(err);

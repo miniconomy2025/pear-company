@@ -139,7 +139,7 @@ export class OrderService {
       const pickupRes = await createPickup({
         companyName: "pear-company",
         quantity: quantityRes.rows[0].total,
-        recipient: `stock order #${orderId}`,
+        recipient: `THoH ${orderId}`,
         modelName: result.rows[0].model,
       });
       if (!pickupRes) {

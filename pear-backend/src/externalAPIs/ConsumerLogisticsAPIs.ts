@@ -26,7 +26,7 @@ function handleError(err: unknown) {
 
 export async function createPickup(pickUp: CustomersPickUpRequest): Promise<CustomersPickUpResponse | undefined> {
   try {
-    const res = await client.post("/pickup", pickUp);
+    const res = await client.post("/api/pickup", pickUp);
     return res.data;
   } catch (err) {
     handleError(err);
@@ -35,7 +35,7 @@ export async function createPickup(pickUp: CustomersPickUpRequest): Promise<Cust
 
 export async function listPickups(status: string): Promise<Array<CustomersAllPickUpResponse> | undefined> {
   try {
-    const res = await client.get("/pickup", {
+    const res = await client.get("/api/pickup", {
       params: status ? { status } : undefined,
     });
     return res.data;
@@ -46,7 +46,7 @@ export async function listPickups(status: string): Promise<Array<CustomersAllPic
 
 export async function createCompany(company_name: string): Promise<CustomersCompanyResponse | undefined> {
   try {
-    const res = await client.post("/companies", { company_name });
+    const res = await client.post("/api/companies", { company_name });
     return res.data;
   } catch (err) {
     handleError(err);
@@ -55,7 +55,7 @@ export async function createCompany(company_name: string): Promise<CustomersComp
 
 export async function listCompanies(): Promise<Array<CustomersCompanyResponse> | undefined> {
   try {
-    const res = await client.get("/companies");
+    const res = await client.get("/api/companies");
     return res.data;
   } catch (err) {
     handleError(err);
