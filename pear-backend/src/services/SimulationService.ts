@@ -5,8 +5,8 @@ import { SimulatedClock } from "../utils/SimulatedClock.js"
 import { pool } from "../config/database.js"
 import type { BankingService } from "../services/BankingService.js"
 import type { MachinePurchasingService } from "./MachinePurchasingService.js"
-import { getUnixEpochStartTime } from "../externalAPIs/SimulationAPIs.js"
 import { PartsInventoryService } from "./PartsInventoryService.js";
+import type { thohRequest } from "../types/publicApi.js"
 
 export class SimulationService {
   private simulationRunning = false
@@ -24,9 +24,7 @@ export class SimulationService {
    private async cleanSimulationData(): Promise<void> {
     const client = await pool.connect()
     try {
-      console.log("Cleaning simulation data...")
       await client.query("CALL clear_all_except_status_and_phones()")
-      console.log(" Simulation data cleaned successfully")
     } catch (error) {
       console.error("Error cleaning simulation data:", error)
       throw error
@@ -35,7 +33,7 @@ export class SimulationService {
     }
   }
 
-  async startSimulation(): Promise<SimulationResponse> {
+  async startSimulation(thohRequest: thohRequest): Promise<SimulationResponse> {
     if (this.simulationRunning) {
       return {
         message: "Simulation is already running.",
@@ -47,9 +45,16 @@ export class SimulationService {
     try {
       await this.cleanSimulationData();
 
-      console.log("Fetching simulation start time from external Simulation API...")
-     
-      SimulatedClock.setSimulationStartTime(new Date("2050-01-01T00:00:00Z"))
+      if (!thohRequest || !thohRequest.epochStartTime) {
+        throw new Error("Did not receive a valid epoch start time from Simulation API.")
+      }
+
+      const thohEpochStartMs = Number.parseInt(thohRequest.epochStartTime, 10)
+      if (isNaN(thohEpochStartMs)) {
+        throw new Error("Invalid epoch time received from Simulation API (not a number).")
+      }
+
+      SimulatedClock.setSimulationStartTime(thohEpochStartMs, new Date("2050-01-01T00:00:00Z"))
 
       await SimulatedClock.saveCurrentDateToDatabase()
       this.simulationRunning = true
@@ -57,7 +62,6 @@ export class SimulationService {
       const currentSimulatedDate = SimulatedClock.getSimulatedDate()
 
       this.startAutoTick()
-      console.log("Simulation started with automatic daily ticking every 2 minutes.")
 
       await this.bankingService.initializeBanking()
 
@@ -98,7 +102,6 @@ export class SimulationService {
     if (this.tickTimer) {
       clearInterval(this.tickTimer)
       this.tickTimer = null
-      console.log("Automatic tick timer stopped")
     }
   }
 
@@ -149,7 +152,10 @@ export class SimulationService {
     return this.simulationRunning
   }
 
-  cleanup(): void {
+  stopSimulation(): void {
+    if (!this.simulationRunning) {
+      throw new Error("Simulation is not running");
+    }
     this.stopAutoTick()
     this.simulationRunning = false
     console.log("SimulationService cleanup completed")

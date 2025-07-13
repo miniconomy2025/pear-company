@@ -3,7 +3,8 @@ import type {
   SimulationTimeResponse,
   SimulationBuyMachineResponse,
   SimulationMachineResponse,
-  SimulationOrderPaymentResponse
+  SimulationOrderPaymentResponse,
+  ReceivePhoneRequest
  } from "../types/extenalApis.js";
 import { httpsAgent } from "../config/httpClient.js";
 
@@ -29,20 +30,14 @@ function handleError(err: unknown) {
   }
 }
 
-// export async function getUnixEpochStartTime(): Promise<{ unixEpochStartTime: string} | undefined> {
-//   try {
-//     const res = await client.get("/unix-epoch-start-time");
-//     return res.data;
-//   } catch (err) {
-//     handleError(err);
-//   }
-// }
-
-export function getUnixEpochStartTime() {
-  // Just return the expected mock format (sync or Promise as your code expects)
-  return Promise.resolve({ unixEpochStartTime: "2024-07-12T00:00:00Z" });
+export async function getUnixEpochStartTime(): Promise<{ unixEpochStartTime: string} | undefined> {
+  try {
+    const res = await client.get("/time");
+    return res.data;
+  } catch (err) {
+    handleError(err);
+  }
 }
-
 
 export async function getCurrentSimulationTime(): Promise<SimulationTimeResponse | undefined> {
   try {
@@ -71,6 +66,16 @@ export async function confirmMachinePayment(orderId: number): Promise<Simulation
       orderId,
     })
     return res.data
+  } catch (err) {
+    handleError(err)
+  }
+}
+
+export async function receivePhone(request: ReceivePhoneRequest): Promise<void> {
+  try {
+    await client.post("/receive-phone", {
+      request,
+    })
   } catch (err) {
     handleError(err)
   }

@@ -17,7 +17,7 @@ export class PartsInventoryService {
       `SELECT p.name, i.quantity_available
        FROM inventory i
        JOIN parts p ON p.part_id = i.part_id
-       WHERE p.name IN ('screens', 'cases', 'electronics')`
+       WHERE p.name IN ('Screens', 'Cases', 'Electronics')`
     );
     const levels: Record<string, number> = {};
     res.rows.forEach((row) => {
@@ -29,15 +29,12 @@ export class PartsInventoryService {
   async checkAndOrderLowStock(simulatedDate: Date): Promise<void> {
     const levels = await this.getPartLevels();
 
-    for (const part of ["screens", "cases", "electronics"]) {
+    for (const part of ["Screens", "Cases", "Electronics"]) {
       const currentLevel = levels[part] || 0;
       if (currentLevel < THRESHOLDS[part]) {
         const amountToOrder = THRESHOLDS[part] - currentLevel;
-        console.log(`Stock low for ${part}: ${currentLevel}. Ordering ${amountToOrder}.`);
         await this.orderPart(part, amountToOrder, simulatedDate);
-      } else {
-        console.log(`${part} stock sufficient: ${currentLevel}`);
-      }
+      } 
     }
   }
 
@@ -53,8 +50,7 @@ export class PartsInventoryService {
             quantity: quantity
           }]
         });
-        console.log(`External pickup created:`, pickupRes);
-
+        
         if (!pickupRes?.bulkLogisticsBankAccountNumber || !pickupRes?.cost || !pickupRes?.paymentReferenceId || !pickupRes?.pickupRequestId) {
           return;
         }
@@ -79,7 +75,6 @@ export class PartsInventoryService {
         [partsPurchaseId, deliveryReference, pickupRes.cost, statusId, `${address}-supplier`, pickupRes.bulkLogisticsBankAccountNumber]
         );
         const bulkDeliveryId = rows[0].bulk_delivery_id;
-        console.log(`Inserted bulk_delivery_id=${bulkDeliveryId}`);
 
         await createTransaction({
           to_account_number: pickupRes.bulkLogisticsBankAccountNumber,
@@ -99,7 +94,7 @@ export class PartsInventoryService {
 
       let order;
       switch (part) {
-        case "screens": {
+        case "Screens": {
           const res = await createScreenOrder(quantity);
           
           if (!!res?.bankAccountNumber && !!res?.totalPrice && !!res?.orderId) {
@@ -112,7 +107,7 @@ export class PartsInventoryService {
           }
           break;
         }
-        case "cases": {
+        case "Cases": {
           const res = await createCaseOrder(quantity);
 
           if (!!res?.total_price && !!res?.id) {
@@ -125,7 +120,7 @@ export class PartsInventoryService {
           }
           break;
         }
-        case "electronics": {
+        case "Electronics": {
           const res = await createElectronicsOrder(quantity);
           
           if (!!res?.bankNumber && !!res?.amountDue && !!res?.orderId) {
@@ -151,6 +146,7 @@ export class PartsInventoryService {
         `SELECT part_id FROM parts WHERE name = $1`,
         [part]
       );
+      console.log('logging', partRes)
       const partId = partRes.rows[0].part_id;
       
       const refRes = await client.query<{ nextval: number }>(

@@ -1,6 +1,8 @@
 
 import type { MachinePurchasingService } from "./MachinePurchasingService.js"
 import type { DeliveryConfirmation } from "../types/publicApi.js";
+import { receivePhone } from "../externalAPIs/SimulationAPIs.js";
+import type { ReceivePhoneRequest } from "../types/extenalApis.js";
 import {pool} from "../config/database.js";
 
 export class LogisticsService {
@@ -14,9 +16,7 @@ export class LogisticsService {
     if (isMachineDelivery) {
       const success = await this.machinePurchasingService.confirmMachineDelivery(delivery.delivery_reference)
 
-      if (success) {
-        console.log(`Machine delivery confirmed successfully`)
-      } else {
+      if (!success)  {
         throw new Error(`Failed to confirm machine delivery for reference ${delivery.delivery_reference}`)
       }
     } else {
@@ -57,9 +57,6 @@ export class LogisticsService {
         `, [delivery.delivery_reference]);
 
         await client.query('COMMIT');
-        console.log(
-          `Bulk delivery confirmed for reference ${delivery.delivery_reference} and inventory updated for part_id ${bulkDelivery.part_id}`
-        );
       } catch (error) {
         await client.query('ROLLBACK');
         console.error("Error confirming bulk goods delivered:", error);
@@ -115,7 +112,6 @@ export class LogisticsService {
       }
 
       await client.query('COMMIT');
-      console.log(`Consumer delivery ${collection.delivery_reference} collected and phone stock updated.`);
     } catch (error) {
       await client.query('ROLLBACK');
       console.error("Error confirming goods collection:", error);
@@ -181,5 +177,40 @@ export class LogisticsService {
   getMachineDeliveryStats = async () => {
     return await this.machinePurchasingService.getMachineDeliveryStats()
   };
+
+  public async notifyDelivery(delivery_reference: string): Promise<void> {
+
+    const result = await pool.query(
+      `SELECT account_number, delivery_reference, order_id 
+       FROM consumer_deliveries
+       WHERE delivery_reference = $1`,
+      [delivery_reference]
+    );
+    if (result.rowCount === 0) {
+      throw new Error("Delivery reference not found");
+    }
+    const row = result.rows[0];
+
+    const orderResult = await pool.query(
+      `SELECT phone_name
+       FROM orders
+       WHERE order_id = $1`,
+      [row.order_id]
+    );
+    if (orderResult.rowCount === 0) {
+      throw new Error("Order not found for delivery");
+    }
+    const order = orderResult.rows[0];
+
+
+    const request: ReceivePhoneRequest = {
+      accountNumber: row.account_number,
+      phoneName: order.phone_name,
+      id: row.delivery_reference,
+      description: `Phone delivery for order ${row.order_id}`,
+    };
+
+    await receivePhone(request);
+  }
 }
 

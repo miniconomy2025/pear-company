@@ -56,8 +56,8 @@ export class MachineLogisticsService {
       // Step 4: Update pickup record with payment info
       await this.updatePickupPayment(
         pickupResponse.pickupRequestId,
-        paymentResponse.transaction_number,
-        pickupResponse.paymentReferenceId,
+        pickupResponse.bulkLogisticsBankAccountNumber,
+        
       )
 
       return true
@@ -82,7 +82,7 @@ export class MachineLogisticsService {
           pickupResponse.pickupRequestId,
           pickupResponse.cost,
           "pear-company", 
-          pickupResponse.paymentReferenceId,
+          pickupResponse.bulkLogisticsBankAccountNumber
         ],
       )
 
@@ -96,8 +96,7 @@ export class MachineLogisticsService {
 
   private async updatePickupPayment(
     pickupRequestId: number,
-    transactionNumber: string,
-    paymentReferenceId: string,
+    accountNumber: string
   ): Promise<void> {
     const client = await pool.connect()
     try {
@@ -107,7 +106,7 @@ export class MachineLogisticsService {
       SET account_number = $1
       WHERE delivery_reference = $2
     `,
-        [`${transactionNumber}|${paymentReferenceId}`, pickupRequestId],
+        [accountNumber, pickupRequestId],
       )
 
     } catch (error) {
@@ -284,13 +283,8 @@ export class MachineLogisticsService {
         WHERE units_received = 0
       `)
 
-      console.log(`🔍 Checking status of ${pendingDeliveries.rows.length} pending pickups...`)
-
       for (const delivery of pendingDeliveries.rows) {
         const status = await this.checkPickupStatus(delivery.pickup_request_id)
-        if (status) {
-          console.log(`Pickup ${delivery.pickup_request_id}: ${status.status}`)
-        }
       }
     } catch (error) {
       console.error("Error checking pending pickup statuses:", error)

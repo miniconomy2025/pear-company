@@ -78,3 +78,7 @@ export interface DeliveryRequest {
   }[];
 }
 
+export interface thohRequest {
+  epochStartTime: string
+}
+

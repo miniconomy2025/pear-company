@@ -172,15 +172,12 @@ export class OrderService {
         ]
       );
 
-      console.log(`Created consumer_delivery with reference ${pickupRes}`);
-
       await createTransaction({
         to_account_number: pickupRes.accountNumber,
         to_bank_name: "commercial-bank",
         amount: pickupRes?.amount || 0,
         description: `Payment for delivery #${ pickupRes?.refernceno}`
       });
-      console.log(`Payment for delivery #${ pickupRes?.refernceno}`);
 
       await client.query("COMMIT");
     } catch (err) {
@@ -329,9 +326,6 @@ export class OrderService {
 
       for (const { order_id } of res.rows) {
         const cancelled = await this.cancelOrder(order_id);
-        if (cancelled) {
-          console.log(`Expired order ${order_id} cancelled and stock released`);
-        }
       }
     } finally {
       client.release();

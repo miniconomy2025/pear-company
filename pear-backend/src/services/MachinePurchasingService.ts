@@ -25,9 +25,7 @@ export class MachinePurchasingService {
       try {
         const success = await this.purchaseAndPayForMachine(config.machineName, 3, config.phoneId)
 
-        if (success) {
-          console.log(`Successfully acquired ${config.machineName}`)
-        } else {
+        if (!success) {
           console.error(`Failed to acquire ${config.machineName}`)
         }
       } catch (error) {
@@ -35,7 +33,6 @@ export class MachinePurchasingService {
       }
     }
 
-    console.log("Machine initialization complete")
   }
 
   async performDailyMachineExpansion(simulatedDate: Date, currentBalance: number): Promise<void> {
@@ -55,20 +52,14 @@ export class MachinePurchasingService {
     const totalCost = expansionNeeds.reduce((sum, need) => sum + need.estimatedCost, 0)
 
     if (currentBalance < totalCost + this.SAFETY_BUFFER) {
-      console.log(
-        `Insufficient funds for basic expansion. Need: $${totalCost.toLocaleString()}, Available: $${(currentBalance - this.SAFETY_BUFFER).toLocaleString()}`,
-      )
       return
     }
 
     for (const need of expansionNeeds) {
       try {
-        console.log(`Basic expansion: ${need.machineName} (+${need.quantity} machines)...`)
         const success = await this.purchaseAndPayForMachine(need.machineName, need.quantity, need.phoneId)
 
-        if (success) {
-          console.log(`Successfully expanded ${need.machineName} capacity`)
-        } else {
+        if (!success) {
           console.error(`Failed to expand ${need.machineName} capacity`)
         }
       } catch (error) {
@@ -83,13 +74,8 @@ export class MachinePurchasingService {
     const estimatedTotalCost = this.MACHINE_CONFIGS.length * 75000
 
     if (currentBalance < estimatedTotalCost + this.SAFETY_BUFFER) {
-      console.log(
-        `Insufficient funds for wealth expansion. Estimated cost: $${estimatedTotalCost.toLocaleString()}, Available: $${(currentBalance - this.SAFETY_BUFFER).toLocaleString()}`,
-      )
       return
     }
-
-    console.log(`Purchasing one additional machine of each type...`)
 
     let successCount = 0
     let totalSpent = 0
@@ -99,7 +85,6 @@ export class MachinePurchasingService {
 
         const remainingFunds = currentBalance - totalSpent
         if (remainingFunds < 75000 + this.SAFETY_BUFFER) {
-          console.log(`Stopping expansion - insufficient remaining funds: $${remainingFunds.toLocaleString()}`)
           break
         }
 
@@ -108,7 +93,6 @@ export class MachinePurchasingService {
         if (success) {
           successCount++
           totalSpent += 75000
-          console.log(`Successfully purchased additional ${config.machineName}`)
         } else {
           console.error(`Failed to purchase additional ${config.machineName}`)
         }
@@ -118,14 +102,9 @@ export class MachinePurchasingService {
     }
 
     if (successCount > 0) {
-      console.log(
-        `Wealth-based expansion complete: ${successCount}/${this.MACHINE_CONFIGS.length} machines purchased`,
-      )
 
       await this.logWealthExpansion(simulatedDate, successCount, totalSpent)
-    } else {
-      console.log(`Wealth-based expansion failed - no machines purchased`)
-    }
+    } 
   }
 
   private async logWealthExpansion(
@@ -157,8 +136,6 @@ export class MachinePurchasingService {
         throw new Error("Failed to place machine order")
       }
 
-      console.log(`Order placed: ID ${orderResponse.orderId}, Total: $${orderResponse.totalPrice}`)
-
       // Step 2: Store order in database
       const machineOrderId = await this.storeMachineOrder(orderResponse, phoneId)
 
@@ -173,8 +150,6 @@ export class MachinePurchasingService {
       if (!paymentResponse || !paymentResponse.success) {
         throw new Error("Payment failed")
       }
-
-      console.log(`Payment successful: Transaction ${paymentResponse.transaction_number}`)
 
       // Step 4: Update order with transaction number
       await this.updateMachineOrderPayment(orderResponse.orderId, paymentResponse.transaction_number)
@@ -209,9 +184,9 @@ export class MachinePurchasingService {
         `
         INSERT INTO machine_purchases (
           phone_id, machines_purchased, total_cost, weight_per_machine, 
-          rate_per_day, status, ratio, reference_number
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING machine_purchase_id
+          rate_per_day, status, ratio, reference_number, account_number
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING machine_purchases_id
       `,
         [
           phoneId,
@@ -222,10 +197,11 @@ export class MachinePurchasingService {
           1,
           JSON.stringify(orderResponse.machineDetails.inputRatio),
           orderResponse.orderId,
+          orderResponse.bankAccount
         ],
       )
 
-      const machineOrderId = result.rows[0].machine_purchase_id
+      const machineOrderId = result.rows[0].machine_purchases_id
       return machineOrderId
     } catch (error) {
       console.error("Error storing machine order:", error)
