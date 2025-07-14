@@ -99,9 +99,9 @@ export class OrderService {
         throw new Error(`Payment for phone failed`);
       }
 
-      await this.deliverGoods(orderId);
-
       await client.query("COMMIT");
+
+      await this.deliverGoods(orderId);
       return { order_id: orderId, price: totalPrice, accountNumber: yourAccountNumber  };
     } catch (err) {
       await client.query("ROLLBACK");
@@ -137,9 +137,9 @@ export class OrderService {
       );
 
       const pickupRes = await createPickup({
-        companyName: "pear-company",
+        companyName: "pear",
         quantity: quantityRes.rows[0].total,
-        recipient: `THoH ${orderId}`,
+        recipient: "THoH",
         modelName: result.rows[0].model,
       });
       if (!pickupRes) {

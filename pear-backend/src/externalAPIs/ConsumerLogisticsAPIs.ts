@@ -35,7 +35,7 @@ export async function createPickup(pickUp: CustomersPickUpRequest): Promise<Cust
 
 export async function listPickups(status: string): Promise<Array<CustomersAllPickUpResponse> | undefined> {
   try {
-    const res = await client.get("/api/pickup", {
+    const res = await client.get("/api/pickups", {
       params: status ? { status } : undefined,
     });
     return res.data;
