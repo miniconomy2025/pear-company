@@ -5,11 +5,11 @@ import type { AxiosError } from "axios";
 /* ---- Types ---- */
 
 export interface RetryOptions {
-  retries?: number;            // default 3
-  minTimeout?: number;         // ms, default 300
-  maxTimeout?: number;         // ms, default 2000
-  factor?: number;             // exponential factor, default 2
-  isRetryable?: (err: unknown) => boolean; // default: 5xx / network
+  retries?: number;
+  minTimeout?: number;
+  maxTimeout?: number;
+  factor?: number;
+  isRetryable?: (err: unknown) => boolean;
 }
 
 export interface BreakerOptions {
@@ -18,68 +18,73 @@ export interface BreakerOptions {
   resetTimeout?: number;
 }
 
-export interface ResilienceOptions<T> {
+export interface ResilienceOptions<T extends (...args: any[]) => Promise<any>> {
   retry?: RetryOptions;
   breaker?: BreakerOptions;
-  fallback?: () => T | Promise<T>; // graceful degradation data
+  fallback?: (...args: Parameters<T>) => ReturnType<T> | Promise<ReturnType<T>>;
 }
 
 function defaultIsRetryable(err: unknown): boolean {
   if ((err as AxiosError).isAxiosError) {
     const axErr = err as AxiosError;
-    if (!axErr.response) return true; // network/timeout
+    if (!axErr.response) return true;
     return [429, 502, 503, 504].includes(axErr.response.status);
   }
   return false;
 }
 
-export function resilient<T>(
-  fn: () => Promise<T>,
+export function resilient<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
   opts: ResilienceOptions<T> = {}
-): () => Promise<T> {
-  /* ---- Retry wrapper ---- */
-  const retryable = () =>
-    pRetry(
-      async () => {
-        try {
-          return await fn();
-        } catch (err) {
-          const isRetryable = opts.retry?.isRetryable ?? defaultIsRetryable;
-          if (!isRetryable(err)) {
-            throw new AbortError((err as Error).message);
+): T {
+  const {
+    retry = {},
+    breaker = {
+      timeout: 6000,
+      errorThresholdPercentage: 50,
+      resetTimeout: 15000,
+    },
+    fallback,
+  } = opts;
+
+  const wrapped = (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    const retryable = () =>
+      pRetry(
+        async () => {
+          try {
+            return await fn(...args);
+          } catch (err) {
+            const isRetryable = retry.isRetryable ?? defaultIsRetryable;
+            if (!isRetryable(err)) {
+              throw new AbortError((err as Error).message);
+            }
+            throw err;
           }
-          throw err;
-        }
-      },
-      {
-        retries: opts.retry?.retries ?? 3,
-        factor: opts.retry?.factor ?? 2,
-        minTimeout: opts.retry?.minTimeout ?? 300,
-        maxTimeout: opts.retry?.maxTimeout ?? 2000,
-        onFailedAttempt: (e) => {
-          console.warn(
-            `[resilience] retry ${e.attemptNumber}/${e.retriesLeft + e.attemptNumber}:`,
-            e.message
-          );
         },
-      }
-    );
+        {
+          retries: retry.retries ?? 3,
+          factor: retry.factor ?? 2,
+          minTimeout: retry.minTimeout ?? 300,
+          maxTimeout: retry.maxTimeout ?? 2000,
+          onFailedAttempt: (e) => {
+            console.warn(
+              `[resilience] retry ${e.attemptNumber}/${e.retriesLeft + e.attemptNumber}:`,
+              e.message
+            );
+          },
+        }
+      );
 
+    const breakerInstance = new CircuitBreaker(retryable, breaker);
 
-  /* ----  Circuit breaker ---- */
-  const breaker = new CircuitBreaker(retryable, {
-    timeout: opts.breaker?.timeout ?? 6000,
-    errorThresholdPercentage: opts.breaker?.errorThresholdPercentage ?? 50,
-    resetTimeout: opts.breaker?.resetTimeout ?? 15000,
-  });
+    if (fallback) breakerInstance.fallback((...args: Parameters<T>) => fallback(...args));
 
-  if (opts.fallback) breaker.fallback(opts.fallback);
+    breakerInstance.on("open", () => console.warn("[resilience] breaker OPEN"));
+    breakerInstance.on("halfOpen", () => console.info("[resilience] breaker HALF‑OPEN"));
+    breakerInstance.on("close", () => console.info("[resilience] breaker CLOSED"));
 
-  breaker.on("open", () => console.warn("[resilience] breaker OPEN"));
-  breaker.on("halfOpen", () => console.info("[resilience] breaker HALF‑OPEN"));
-  breaker.on("close", () => console.info("[resilience] breaker CLOSED"));
+    return breakerInstance.fire();
+  };
 
-
-  /* ---- Return wrapped fn ---- */
-  return () => breaker.fire();
+  return wrapped as T;
 }

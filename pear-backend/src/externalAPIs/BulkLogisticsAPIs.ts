@@ -1,14 +1,19 @@
 import axios from "axios";
-import type { BulkCreatePickUpRequest, BulkCreatePickUpResponse, BulkPickUpResponse } from "../types/extenalApis.js";
+import type {
+  BulkCreatePickUpRequest,
+  BulkCreatePickUpResponse,
+  BulkPickUpResponse,
+} from "../types/extenalApis.js";
 import { httpsAgent } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const BULK_LOGISTICS_BASE_URL = process.env.BULK_LOGISTICS_BASE_URL
+const BULK_LOGISTICS_BASE_URL = process.env.BULK_LOGISTICS_BASE_URL;
 
 const client = axios.create({
   baseURL: BULK_LOGISTICS_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
+  httpsAgent: httpsAgent,
 });
 
 function handleError(err: unknown) {
@@ -24,39 +29,40 @@ function handleError(err: unknown) {
   }
 }
 
-export async function createPickupRequest(request: BulkCreatePickUpRequest,): Promise<BulkCreatePickUpResponse | undefined> {
-  try {
-    const res = await client.post("/api/pickup-request", request);
-    if (res.status === 201) {
-      return res.data
-    }
-    else{
-      throw new Error(`Unexpected response status: ${res.status}`)
-    }
-  } catch (err) {
-    handleError(err);
-  }
-}
+const _createPickupRequest = async (
+  request: BulkCreatePickUpRequest
+): Promise<BulkCreatePickUpResponse | undefined> => {
+  const res = await client.post("/api/pickup-request", request);
+  if (res.status === 201) return res.data;
+  throw new Error(`Unexpected response status: ${res.status}`);
+};
 
-export async function getPickupRequest(pickupRequestId: number): Promise<BulkPickUpResponse | undefined> {
-  try {
-    const res = await client.get(`/api/pickup-request/${pickupRequestId}`);
-    if (res.status === 200) {
-      return res.data;
-    }
-    else {
-      throw new Error(`Unexpected response status: ${res.status}`)
-    }
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const createPickupRequest = resilient(_createPickupRequest, {
+  fallback: async (_request: BulkCreatePickUpRequest) => undefined,
+});
 
-export async function getPickupRequestsByCompany(companyId: string): Promise<Array<BulkPickUpResponse> | undefined> {
-  try {
-    const res = await client.get(`/api/pickup-request/company/${companyId}`);
-    return res.data;
-  } catch (err) {
-    handleError(err);
+const _getPickupRequest = async (
+  pickupRequestId: number
+): Promise<BulkPickUpResponse | undefined> => {
+  const res = await client.get(`/api/pickup-request/${pickupRequestId}`);
+  if (res.status === 200) return res.data;
+  throw new Error(`Unexpected response status: ${res.status}`);
+};
+
+export const getPickupRequest = resilient(_getPickupRequest, {
+  fallback: async (_pickupRequestId: number) => undefined,
+});
+
+const _getPickupRequestsByCompany = async (
+  companyId: string
+): Promise<Array<BulkPickUpResponse> | undefined> => {
+  const res = await client.get(`/api/pickup-request/company/${companyId}`);
+  return res.data;
+};
+
+export const getPickupRequestsByCompany = resilient(
+  _getPickupRequestsByCompany,
+  {
+    fallback: async (_companyId: string) => [],
   }
-}
+);

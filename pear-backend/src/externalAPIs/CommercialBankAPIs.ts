@@ -1,17 +1,25 @@
 import axios from "axios";
-import type { CommercialBankLoansResponse, CommercialBankTransationRequest, CommercialBankTransationResponse, 
-  CommercialBankTransationItemResponse, CommercialBankTakeLoanResponse, CommercialBankLoanListResponse,
-  CommercialBankLoanPayResponse, CommercialBankLoanDetailsResponse, 
-  CommercialBankAccountResponse} from "../types/extenalApis.js";
+import type {
+  CommercialBankLoansResponse,
+  CommercialBankTransationRequest,
+  CommercialBankTransationResponse,
+  CommercialBankTransationItemResponse,
+  CommercialBankTakeLoanResponse,
+  CommercialBankLoanListResponse,
+  CommercialBankLoanPayResponse,
+  CommercialBankLoanDetailsResponse,
+  CommercialBankAccountResponse,
+} from "../types/extenalApis.js";
 import { httpsAgent } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const COMMERCIAL_BANK_BASE_URL = process.env.COMMERCIAL_BANK_BASE_URL
+const COMMERCIAL_BANK_BASE_URL = process.env.COMMERCIAL_BANK_BASE_URL;
 
 const client = axios.create({
   baseURL: COMMERCIAL_BANK_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
+  httpsAgent: httpsAgent,
 });
 
 function handleError(err: unknown) {
@@ -27,141 +35,142 @@ function handleError(err: unknown) {
   }
 }
 
-export async function createAccount(): Promise<CommercialBankAccountResponse | undefined> {
-  try {
+export const createAccount = resilient(
+  async (): Promise<CommercialBankAccountResponse | undefined> => {
     const res = await client.post("/api/account", {
-      notification_url: "https://pear-company-api.projects.bbdgrad.com/public-api"
+      notification_url:
+        "https://pear-company-api.projects.bbdgrad.com/public-api",
     });
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async () => undefined }
+);
 
-export async function getMyAccount(): Promise<string | undefined> {
-  try {
+export const getMyAccount = resilient(
+  async (): Promise<string | undefined> => {
     const res = await client.get("/api/account/me");
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async () => undefined }
+);
 
-export async function setNotificationUrl(notification_url: string): Promise<boolean | undefined> {
-  try {
-    const res = await client.post("/api/account/me/notify", { notification_url });
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
-
-export async function getBalance(): Promise<number | undefined> {
-  try {
-    const res = await client.get("/api/account/me/balance");
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
-
-export async function isAccountFrozen(): Promise<boolean | undefined> {
-  try {
-    const res = await client.get("/api/account/me/frozen");
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
-
-export async function getMyLoans(): Promise<CommercialBankLoansResponse | undefined> {
-  try {
-    const res = await client.get("/api/account/me/loans");
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
-
-export async function createTransaction(payload: CommercialBankTransationRequest): Promise<CommercialBankTransationResponse | undefined> {
-  try {
-    const res = await client.post("/api/transaction", {
-      to_account_number: payload.to_account_number,
-      to_bank_name: payload.to_bank_name,
-      amount: payload.amount,
-      description: payload.description,
+export const setNotificationUrl = resilient(
+  async (notification_url: string): Promise<boolean | undefined> => {
+    const res = await client.post("/api/account/me/notify", {
+      notification_url,
     });
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async (notification_url: string) => false }
+);
 
-export async function getStatement(from: number, to: number, only_successful: boolean): Promise<Array<CommercialBankTransationItemResponse> |undefined> {
-  try {
-    const params = { from, to, only_successful };
-    const res = await client.get("/api/transaction", { params });
+export const getBalance = resilient(
+  async (): Promise<number | undefined> => {
+    const res = await client.get("/api/account/me/balance");
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async () => 0 }
+);
 
-export async function getTransaction(transaction_number: number): Promise<CommercialBankTransationItemResponse |undefined> {
-  try {
+export const isAccountFrozen = resilient(
+  async (): Promise<boolean | undefined> => {
+    const res = await client.get("/api/account/me/frozen");
+    return res.data;
+  },
+  { fallback: async () => false }
+);
+
+export const getMyLoans = resilient(
+  async (): Promise<CommercialBankLoansResponse | undefined> => {
+    const res = await client.get("/api/account/me/loans");
+    return res.data;
+  },
+  { fallback: async () => undefined }
+);
+
+export const createTransaction = resilient(
+  async (
+    payload: CommercialBankTransationRequest
+  ): Promise<CommercialBankTransationResponse | undefined> => {
+    const res = await client.post("/api/transaction", payload);
+    return res.data;
+  },
+  { fallback: async (payload: CommercialBankTransationRequest) => undefined }
+);
+
+export const getStatement = resilient(
+  async (
+    from: number,
+    to: number,
+    only_successful: boolean
+  ): Promise<CommercialBankTransationItemResponse[] | undefined> => {
+    const res = await client.get("/api/transaction", {
+      params: { from, to, only_successful },
+    });
+    return res.data;
+  },
+  { fallback: async (from: number, to: number, only_successful: boolean) => [] }
+);
+
+export const getTransaction = resilient(
+  async (
+    transaction_number: number
+  ): Promise<CommercialBankTransationItemResponse | undefined> => {
     const res = await client.get(`/api/transaction/${transaction_number}`);
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async (transaction_number: number) => undefined }
+);
 
-export async function takeLoan(amount: number): Promise<CommercialBankTakeLoanResponse |undefined> {
-  try {
+export const takeLoan = resilient(
+  async (
+    amount: number
+  ): Promise<CommercialBankTakeLoanResponse | undefined> => {
     const res = await client.post("/api/loan", { amount });
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async (amount: number) => undefined }
+);
 
-export async function listLoans(): Promise<Array<CommercialBankLoanListResponse> | undefined> {
-  try {
+export const listLoans = resilient(
+  async (): Promise<CommercialBankLoanListResponse[] | undefined> => {
     const res = await client.get("/api/loan");
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async () => [] }
+);
 
-export async function repayLoan(loan_number: number, amount: number): Promise<CommercialBankLoanPayResponse | undefined> {
-  try {
+export const repayLoan = resilient(
+  async (
+    loan_number: number,
+    amount: number
+  ): Promise<CommercialBankLoanPayResponse | undefined> => {
     const res = await client.post(`/api/loan/${loan_number}/pay`, { amount });
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async (loan_number: number, amount: number) => undefined }
+);
 
-export async function getLoan(loan_number: number): Promise<CommercialBankLoanDetailsResponse | undefined> {
-  try {
+export const getLoan = resilient(
+  async (
+    loan_number: number
+  ): Promise<CommercialBankLoanDetailsResponse | undefined> => {
     const res = await client.get(`/api/loan/${loan_number}`);
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async (loan_number: number) => undefined }
+);
 
-export async function notifyInterbankTransfer(
-  transaction_number: string,
-  from_account_number: string,
-  from_bank_name: string,
-  to_account_number: string,
-  amount: number,
-  description: string,
-  timestamp: number
-) {
-  try {
+export const notifyInterbankTransfer = resilient(
+  async (
+    transaction_number: string,
+    from_account_number: string,
+    from_bank_name: string,
+    to_account_number: string,
+    amount: number,
+    description: string,
+    timestamp: number
+  ) => {
     const res = await client.post("/api/interbank/transfer", {
       transaction_number,
       from_account_number,
@@ -172,7 +181,16 @@ export async function notifyInterbankTransfer(
       timestamp,
     });
     return res.data;
-  } catch (err) {
-    handleError(err);
+  },
+  {
+    fallback: async (
+      transaction_number: string,
+      from_account_number: string,
+      from_bank_name: string,
+      to_account_number: string,
+      amount: number,
+      description: string,
+      timestamp: number
+    ) => undefined,
   }
-}
+);
