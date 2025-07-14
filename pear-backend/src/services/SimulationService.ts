@@ -34,14 +34,7 @@ export class SimulationService {
   }
 
   async startSimulation(thohRequest: thohRequest): Promise<SimulationResponse> {
-    if (this.simulationRunning) {
-      return {
-        message: "Simulation is already running.",
-        tick: SimulatedClock.getCurrentSimulatedDayOffset(),
-        status: "running",
-      }
-    }
-
+  
     try {
       await this.cleanSimulationData();
 
