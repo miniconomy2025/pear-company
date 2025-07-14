@@ -26,7 +26,7 @@ function handleError(err: unknown) {
 
 export async function createPickup(pickUp: CustomersPickUpRequest): Promise<CustomersPickUpResponse | undefined> {
   try {
-    const res = await client.post("/api/pickup", pickUp);
+    const res = await client.post("/api/pickups", pickUp);
     return res.data;
   } catch (err) {
     handleError(err);
@@ -35,7 +35,7 @@ export async function createPickup(pickUp: CustomersPickUpRequest): Promise<Cust
 
 export async function listPickups(status: string): Promise<Array<CustomersAllPickUpResponse> | undefined> {
   try {
-    const res = await client.get("/api/pickup", {
+    const res = await client.get("/api/pickups", {
       params: status ? { status } : undefined,
     });
     return res.data;
