@@ -1,20 +1,21 @@
 import axios from "axios";
-import type { 
+import type {
   SimulationTimeResponse,
   SimulationBuyMachineResponse,
   SimulationMachineResponse,
   SimulationOrderPaymentResponse,
-  ReceivePhoneRequest
- } from "../types/extenalApis.js";
+  ReceivePhoneRequest,
+} from "../types/extenalApis.js";
 import { httpsAgent } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const SIMULATION_API_BASE_URL = process.env.SIMULATION_API_BASE_URL
+const SIMULATION_API_BASE_URL = process.env.SIMULATION_API_BASE_URL;
 
 const client = axios.create({
-  baseURL: SIMULATION_API_BASE_URL, 
+  baseURL: SIMULATION_API_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
+  httpsAgent: httpsAgent,
 });
 
 function handleError(err: unknown) {
@@ -30,51 +31,46 @@ function handleError(err: unknown) {
   }
 }
 
-export async function getUnixEpochStartTime(): Promise<{ unixEpochStartTime: string} | undefined> {
-  try {
+export const getUnixEpochStartTime = resilient(
+  async (): Promise<{ unixEpochStartTime: string } | undefined> => {
     const res = await client.get("/time");
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async () => undefined }
+);
 
-export async function getCurrentSimulationTime(): Promise<SimulationTimeResponse | undefined> {
-  try {
+export const getCurrentSimulationTime = resilient(
+  async (): Promise<SimulationTimeResponse | undefined> => {
     const res = await client.get("/current-simulation-time");
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async () => undefined }
+);
 
-export async function purchaseMachine(machineName: string, quantity: number): Promise<SimulationBuyMachineResponse | undefined> {
-  try {
-    const res = await client.post("/machines", {
-      machineName,
-      quantity,
-    });
+export const purchaseMachine = resilient(
+  async (
+    machineName: string,
+    quantity: number
+  ): Promise<SimulationBuyMachineResponse | undefined> => {
+    const res = await client.post("/machines", { machineName, quantity });
     return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+  },
+  { fallback: async (_machineName: string, _quantity: number) => undefined }
+);
 
-export async function confirmMachinePayment(orderId: number): Promise<SimulationOrderPaymentResponse | undefined> {
-  try {
-    const res = await client.post("/orders/payments", {
-      orderId,
-    })
-    return res.data
-  } catch (err) {
-    handleError(err)
-  }
-}
+export const confirmMachinePayment = resilient(
+  async (
+    orderId: number
+  ): Promise<SimulationOrderPaymentResponse | undefined> => {
+    const res = await client.post("/orders/payments", { orderId });
+    return res.data;
+  },
+  { fallback: async (_orderId: number) => undefined }
+);
 
-export async function receivePhone(request: ReceivePhoneRequest): Promise<void> {
-  try {
-    await client.post("/receive-phone", request)
-  } catch (err) {
-    handleError(err)
-  }
-}
+export const receivePhone = resilient(
+  async (request: ReceivePhoneRequest): Promise<void> => {
+    await client.post("/receive-phone", request);
+  },
+  { fallback: async (_request: ReceivePhoneRequest) => undefined }
+);

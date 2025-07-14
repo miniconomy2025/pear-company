@@ -1,14 +1,18 @@
 import axios from "axios";
-import type { RetailBankTransationRequest, RetailBankTransationResponse} from "../types/extenalApis.js";
+import type {
+  RetailBankTransationRequest,
+  RetailBankTransationResponse,
+} from "../types/extenalApis.js";
 import { httpsAgent } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL
+const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL;
 
 const client = axios.create({
   baseURL: RETAIL_BANK_BASE_URL,
   timeout: 5000,
   headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
+  httpsAgent: httpsAgent,
 });
 
 function handleError(err: unknown) {
@@ -24,17 +28,17 @@ function handleError(err: unknown) {
   }
 }
 
-export async function createRetailTransaction(payload: RetailBankTransationRequest): Promise<RetailBankTransationResponse | undefined> {
-  try {
+export const createRetailTransaction = resilient(
+  async (
+    payload: RetailBankTransationRequest
+  ): Promise<RetailBankTransationResponse | undefined> => {
     const res = await client.post("/transaction", payload);
     if (res.status === 200) {
-        return res.data;
+      return res.data;
     }
-    else {
-        return;
-    }
-  } catch (err) {
-    handleError(err);
+    return undefined;
+  },
+  {
+    fallback: async (_payload: RetailBankTransationRequest) => undefined,
   }
-}
-
+);
