@@ -10,20 +10,25 @@
     "build-linux": "npm run clean && npx tsc",
     "dev": "nodemon --exec node --loader ts-node/esm src/index.ts",
     "start": "npm run build && node dist/index.js",
-    "db:test": "node --loader ts-node/esm src/scripts/testConnection.ts"
+    "db:test": "node --loader ts-node/esm src/scripts/testConnection.ts",
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@jest/globals": "^29.7.0",
     "@types/node": "^24.0.7",
     "@types/opossum": "^8.1.9",
     "@types/p-retry": "^3.0.0",
     "@types/pg": "^8.15.4",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "npm": "^11.4.2",
     "rimraf": "^6.0.1",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
