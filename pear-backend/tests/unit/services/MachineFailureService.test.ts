@@ -2,6 +2,7 @@ import { MachineFailureService } from "../../../src/services/MachineFailureServi
 import { pool } from "../../../src/config/database";
 import { jest, describe, beforeEach, afterEach, it, expect } from "@jest/globals";
 
+
 jest.mock("../../../src/config/database", () => ({
   pool: {
     connect: jest.fn(),
