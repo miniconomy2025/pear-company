@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 # ---------------------------------------------------------------------
-# Custom VPC and Subnets (replaces default VPC references)
+# Custom VPC and Subnets
 # ---------------------------------------------------------------------
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
@@ -51,6 +51,40 @@ resource "aws_subnet" "main_subnet_b" {
   tags = {
     Name = "pear_subnet_b"
   }
+}
+
+# ---------------------------------------------------------------------
+# Internet Gateway & Public Route Table
+# ---------------------------------------------------------------------
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "pear_main_igw"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "pear_public_rt"
+  }
+}
+
+resource "aws_route_table_association" "subnet_a" {
+  subnet_id      = aws_subnet.main_subnet_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "subnet_b" {
+  subnet_id      = aws_subnet.main_subnet_b.id
+  route_table_id = aws_route_table.public.id
 }
 
 # ---------------------------------------------------------------------
@@ -164,19 +198,19 @@ data "aws_secretsmanager_secret_version" "postgrespass" {
 # RDS Instance
 # ---------------------------------------------------------------------
 resource "aws_db_instance" "peardb" {
-  identifier                = "peardb"
-  engine                    = "postgres"
-  engine_version            = "16.8"
-  instance_class            = "db.t4g.micro"
-  db_name                   = "peardb"
-  allocated_storage         = 20
-  storage_type              = "gp2"
-  publicly_accessible       = true
-  username                  = data.aws_secretsmanager_secret_version.postgresuser.secret_string
-  password                  = data.aws_secretsmanager_secret_version.postgrespass.secret_string
-  skip_final_snapshot       = true
-  vpc_security_group_ids    = [aws_security_group.allow_postgres.id]
-  db_subnet_group_name      = aws_db_subnet_group.pear_db_subnet_group.name
+  identifier             = "peardb"
+  engine                 = "postgres"
+  engine_version         = "16.8"
+  instance_class         = "db.t4g.micro"
+  db_name                = "peardb"
+  allocated_storage      = 20
+  storage_type           = "gp2"
+  publicly_accessible    = true
+  username               = data.aws_secretsmanager_secret_version.postgresuser.secret_string
+  password               = data.aws_secretsmanager_secret_version.postgrespass.secret_string
+  skip_final_snapshot    = true
+  vpc_security_group_ids = [aws_security_group.allow_postgres.id]
+  db_subnet_group_name   = aws_db_subnet_group.pear_db_subnet_group.name
 
   tags = {
     Name = "peardb"
@@ -191,13 +225,11 @@ output "db_host" {
 # ---------------------------------------------------------------------
 # Conditional EC2 Key Pair Creation + Secret Storage
 # ---------------------------------------------------------------------
-
 locals {
   create_api_key = true
   create_web_key = true
 }
 
-# API Key Pair
 resource "tls_private_key" "api_key" {
   count     = local.create_api_key ? 1 : 0
   algorithm = "RSA"
@@ -222,7 +254,6 @@ resource "aws_secretsmanager_secret_version" "api_private_key_version" {
   secret_string = tls_private_key.api_key[0].private_key_pem
 }
 
-# Web Key Pair
 resource "tls_private_key" "web_key" {
   count     = local.create_web_key ? 1 : 0
   algorithm = "RSA"
@@ -282,8 +313,8 @@ resource "aws_budgets_budget" "pear_budget" {
   budget_type       = "COST"
   limit_amount      = "25"
   limit_unit        = "USD"
-  time_period_end   = "2025-07-15_00:00"
-  time_period_start = "2025-07-01_00:00"
+  time_period_end   = "2026-12-31_00:00"
+  time_period_start = "2025-01-01_00:00"
   time_unit         = "MONTHLY"
 
   notification {
