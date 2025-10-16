@@ -227,7 +227,7 @@ output "db_host" {
 # ---------------------------------------------------------------------
 locals {
   create_api_key = false
-  create_web_key = fasle
+  create_web_key = false
 }
 
 resource "tls_private_key" "api_key" {
