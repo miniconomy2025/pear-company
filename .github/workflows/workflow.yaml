@@ -578,7 +578,7 @@ jobs:
       uses: aws-actions/aws-secretsmanager-get-secrets@v2
       with:
         secret-ids: |
-          API_EC2_PRIVATE_KEY, apiprivatekey
+          API_EC2_PRIVATE_KEY, pear-api-private-key
 
     - name: Setup private key
       run: |
@@ -635,7 +635,7 @@ jobs:
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            API_EC2_PRIVATE_KEY, apiprivatekey
+            API_EC2_PRIVATE_KEY, pear-api-private-key
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
             
