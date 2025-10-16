@@ -402,24 +402,29 @@ jobs:
             unzip -o api-build.zip &&
             cd api-build/ &&
             
-            # Copy environment file to the app directory
-            cp /home/ubuntu/.env .
+            # Copy environment file from home directory
+            cp /home/ubuntu/.env ./
             
-            # Debug: Check if .env file was created correctly (mask password)
+            # Debug: Verify .env (mask password)
             echo "=== Environment file contents (masked) ==="
             sed "s/DB_PASSWORD=.*/DB_PASSWORD=***MASKED***/" .env
             echo "=========================================="
-            
-            npm install &&
-            
-            # Stop and delete existing pm2 process if it exists
+
+            npm install --omit=dev
+
+            # Stop any running instance
             if pm2 list | grep -q "pear-api"; then
               pm2 delete pear-api;
-            fi &&
-            
+            fi
+
+            # Load env vars before starting PM2
+            export $(grep -v "^#" .env | xargs)
+
             cd dist &&
-            # Start with environment file
             pm2 start index.js --name pear-api
+
+            # Save PM2 process list and environment
+            pm2 save
           '
 
       - name: Setup nginx proxy and obtain real SSL certificate for API EC2
