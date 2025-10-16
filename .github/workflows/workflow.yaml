@@ -76,7 +76,7 @@ jobs:
       - name: Install required dependencies
         run: npm install
         working-directory: pear-frontend
-        
+
       - name: Build application
         run: npm run build
         working-directory: pear-frontend
@@ -88,7 +88,7 @@ jobs:
           cp -r build front-end-build/
           cp package.json front-end-build/
           zip -r front-end-build.zip front-end-build
-          
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -100,7 +100,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: 
+    needs:
       - build-front-end
       - terraform
     runs-on: ubuntu-latest
@@ -158,14 +158,14 @@ jobs:
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-          
+
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./front-end-build.zip "ubuntu@$EC2_HOST:front-end-build.zip"
-          
+
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o front-end-build.zip && cd front-end-build/ &&
             npm install
           '
-          
+
           # CREATE THE MISSING SCRIPT
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             cat <<EOF > start-serve.sh
@@ -173,7 +173,7 @@ jobs:
           npx serve -s build -l 3000
           EOF'
 
-      - name: Make script executable 
+      - name: Make script executable
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
@@ -256,7 +256,7 @@ jobs:
       - name: Install required dependencies
         run: npm install
         working-directory: pear-backend
-        
+
       - name: Compile Typescript to Javascript
         run: npm run build-linux
         working-directory: pear-backend
@@ -268,7 +268,7 @@ jobs:
           cp -r dist api-build/
           cp package.json api-build/
           zip -r api-build.zip api-build
-          
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -280,7 +280,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: 
+    needs:
       - build-api
       - terraform
     runs-on: ubuntu-latest
@@ -336,11 +336,11 @@ jobs:
             echo "PM2 version: $(pm2 --version)"
             echo "Nginx status: $(sudo systemctl is-active nginx)"
           '
-        
+
       - name: Set env variables (FIXED - Direct secret transfer)
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          
+
           # Extract DB host without port
           DB_HOST_RAW="${{ needs.terraform.outputs.dbhost }}"
           if [[ "$DB_HOST_RAW" == *":"* ]]; then
@@ -348,20 +348,20 @@ jobs:
           else
             DB_HOST_CLEAN="$DB_HOST_RAW"
           fi
-          
+
           echo "DB Host cleaned: $DB_HOST_CLEAN"
-          
+
           # Create .env file using base64 encoding to avoid shell interpretation
           POSTGRES_PASS_B64=$(echo -n "${{ env.POSTGRES_PASS }}" | base64 -w 0)
           POSTGRES_USER_B64=$(echo -n "${{ env.POSTGRES_USER }}" | base64 -w 0)
-          
+
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" << ENVEOF
           echo "Creating secure environment file with base64 decoding..."
-          
+
           # Decode the base64 encoded secrets
           POSTGRES_USER_DECODED=\$(echo "$POSTGRES_USER_B64" | base64 -d)
           POSTGRES_PASS_DECODED=\$(echo "$POSTGRES_PASS_B64" | base64 -d)
-          
+
           # Create .env file with decoded values
           cat > /home/ubuntu/.env << EOF
           DB_USER=\$POSTGRES_USER_DECODED
@@ -381,7 +381,7 @@ jobs:
           RETAIL_BANK_BASE_URL=https://retail-bank-api.projects.bbdgrad.com
           TEST=TESTING VARIABLES
           EOF
-          
+
           # Set proper permissions
           chmod 600 /home/ubuntu/.env
           echo "Environment file created with base64 decoding method"
@@ -391,13 +391,13 @@ jobs:
           POSTGRES_PASS: ${{ env.POSTGRES_PASS }}
           CLIENT_CERT_PATH: ${{ env.CLIENT_CERT_PATH }}
           CLIENT_KEY_PATH: ${{ env.CLIENT_KEY_PATH }}
-        
+
       - name: Deploy
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
-          
+
           scp -o StrictHostKeyChecking=no -i privatekey.pem ./api-build.zip "ubuntu@$EC2_HOST:api-build.zip"
-          
+
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
             unzip -o api-build.zip &&
             cd api-build/ &&
@@ -464,7 +464,7 @@ jobs:
                 proxy_set_header X-Forwarded-Proto $scheme;
               }
             }
-            EOF_NGINX
+          EOF_NGINX
             
             # Test nginx config
             sudo nginx -t
@@ -488,58 +488,58 @@ jobs:
 
   issue-certificates-web:
     needs:
-    - deploy-frontend
-    - terraform
+      - deploy-frontend
+      - terraform
     permissions:
-        id-token: write
-        contents: read
+      id-token: write
+      contents: read
     name: Issue SSL Certificate for Web
     runs-on: ubuntu-latest
     steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        role-to-assume: arn:aws:iam::804180393465:role/github-role
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::804180393465:role/github-role
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Get secrets from AWS Key Store
-      uses: aws-actions/aws-secretsmanager-get-secrets@v2
-      with:
-        secret-ids: |
-          WEB_EC2_PRIVATE_KEY, webprivatekey
+      - name: Get secrets from AWS Key Store
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            WEB_EC2_PRIVATE_KEY, webprivatekey
 
-    - name: Setup private key
-      run: |
-        echo "${{ env.WEB_EC2_PRIVATE_KEY }}" > privatekey.pem
-        chmod 0500 privatekey.pem
+      - name: Setup private key
+        run: |
+          echo "${{ env.WEB_EC2_PRIVATE_KEY }}" > privatekey.pem
+          chmod 0500 privatekey.pem
 
-    - name: Install Certbot and Issue SSL Certificate for Web
-      run: |
-        EC2_HOST=${{ needs.terraform.outputs.webec2host }}
-        ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-          # Install certbot
-          sudo apt install certbot python3-certbot-nginx -y
-          
-          # Issue SSL certificate for web domain
-          sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
-          
-          # Verify certificate
-          sudo certbot certificates
-          
-          # Test nginx config after SSL
-          sudo nginx -t
-          
-          # Ensure nginx is running and reload
-          sudo systemctl start nginx
-          if sudo systemctl is-active --quiet nginx; then
-            sudo systemctl reload nginx
-          else
+      - name: Install Certbot and Issue SSL Certificate for Web
+        run: |
+          EC2_HOST=${{ needs.terraform.outputs.webec2host }}
+          ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
+            # Install certbot
+            sudo apt install certbot python3-certbot-nginx -y
+            
+            # Issue SSL certificate for web domain
+            sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
+            
+            # Verify certificate
+            sudo certbot certificates
+            
+            # Test nginx config after SSL
+            sudo nginx -t
+            
+            # Ensure nginx is running and reload
             sudo systemctl start nginx
-          fi
-          
-          echo "SSL certificate issued for web frontend"
-        '
-        
+            if sudo systemctl is-active --quiet nginx; then
+              sudo systemctl reload nginx
+            else
+              sudo systemctl start nginx
+            fi
+            
+            echo "SSL certificate issued for web frontend"
+          '
+
   flyway:
     needs:
       - terraform
@@ -566,7 +566,7 @@ jobs:
             API_EC2_PRIVATE_KEY, pear-api-private-key
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
-            
+
       - name: Export secrets as environment variables
         run: |
           echo "POSTGRES_USER=${{ env.POSTGRES_USER }}" >> $GITHUB_ENV
