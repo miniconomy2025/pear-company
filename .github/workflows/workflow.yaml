@@ -477,7 +477,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    name: Issue SSL Certificate for Web
+    name: Issue SSL Certificate for Web (DuckDNS)
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
@@ -497,31 +497,60 @@ jobs:
           echo "${{ env.WEB_EC2_PRIVATE_KEY }}" > privatekey.pem
           chmod 0500 privatekey.pem
 
-      - name: Install Certbot and Issue SSL Certificate for Web
+      - name: Configure Nginx and Obtain SSL Certificate (DuckDNS)
         run: |
           EC2_HOST=${{ needs.terraform.outputs.webec2host }}
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            # Install certbot
-            sudo apt install certbot python3-certbot-nginx -y
-            
-            # Issue SSL certificate for web domain
-            sudo certbot --nginx -d pear-company.projects.bbdgrad.com --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
-            
-            # Verify certificate
-            sudo certbot certificates
-            
-            # Test nginx config after SSL
-            sudo nginx -t
-            
-            # Ensure nginx is running and reload
+            DOMAIN="pear-web.duckdns.org"
+
+            echo "🔧 Installing dependencies..."
+            sudo apt update -y
+            sudo apt install -y nginx certbot python3-certbot-nginx curl
+
+            echo "Ensuring nginx is enabled..."
+            sudo systemctl enable nginx
             sudo systemctl start nginx
-            if sudo systemctl is-active --quiet nginx; then
-              sudo systemctl reload nginx
-            else
-              sudo systemctl start nginx
-            fi
-            
-            echo "SSL certificate issued for web frontend"
+
+            echo "Configuring nginx for $DOMAIN..."
+            sudo tee /etc/nginx/sites-enabled/default > /dev/null <<EOF
+            server {
+              listen 80;
+              server_name $DOMAIN;
+
+              location /.well-known/acme-challenge/ {
+                root /var/www/html;
+              }
+
+              location / {
+                proxy_pass http://localhost:3000;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade \$http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host \$host;
+                proxy_cache_bypass \$http_upgrade;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+            }
+          EOF
+
+            sudo nginx -t && sudo systemctl reload nginx
+
+            echo "Requesting SSL certificate for $DOMAIN..."
+            sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos -m franco.dubuisson@bbd.co.za
+
+            echo "Verifying certificate installation..."
+            sudo certbot certificates
+
+            echo "Testing and reloading nginx..."
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            echo "Setting up auto-renewal cron job..."
+            echo "0 12 * * * root certbot renew --quiet" | sudo tee /etc/cron.d/certbot-renew
+
+            echo "SSL certificate successfully installed for $DOMAIN"
           '
 
   flyway:
