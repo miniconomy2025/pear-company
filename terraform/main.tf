@@ -19,34 +19,59 @@ provider "aws" {
 }
 
 # ---------------------------------------------------------------------
-# Default Network Setup (unchanged)
+# Custom VPC and Subnets (replaces default VPC references)
 # ---------------------------------------------------------------------
-data "aws_vpc" "default" {
-  default = true
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "pear_main_vpc"
+  }
 }
 
 data "aws_availability_zones" "available_zones" {}
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+resource "aws_subnet" "main_subnet_a" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = data.aws_availability_zones.available_zones.names[0]
+
+  tags = {
+    Name = "pear_subnet_a"
   }
 }
 
+resource "aws_subnet" "main_subnet_b" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = data.aws_availability_zones.available_zones.names[1]
+
+  tags = {
+    Name = "pear_subnet_b"
+  }
+}
+
+# ---------------------------------------------------------------------
+# DB Subnet Group
+# ---------------------------------------------------------------------
 resource "aws_db_subnet_group" "pear_db_subnet_group" {
   name       = "pear_db_subnet_group"
-  subnet_ids = data.aws_subnets.default.ids
+  subnet_ids = [aws_subnet.main_subnet_a.id, aws_subnet.main_subnet_b.id]
 
   tags = {
     Name = "pear_db_subnet_group"
   }
 }
 
+# ---------------------------------------------------------------------
+# Security Groups
+# ---------------------------------------------------------------------
 resource "aws_security_group" "allow_postgres" {
   name_prefix = "allow_postgres_"
-  vpc_id      = data.aws_vpc.default.id
-  
+  vpc_id      = aws_vpc.main.id
+
   ingress {
     from_port   = 5432
     to_port     = 5432
@@ -66,6 +91,67 @@ resource "aws_security_group" "allow_postgres" {
   }
 }
 
+resource "aws_security_group" "ec2_security_group" {
+  name_prefix = "pear_api_sg"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 444
+    to_port     = 444
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ec2_security_group"
+  }
+}
+
+# ---------------------------------------------------------------------
+# Secrets for Postgres
+# ---------------------------------------------------------------------
 data "aws_secretsmanager_secret_version" "postgresuser" {
   secret_id = "postgresuser"
 }
@@ -74,6 +160,9 @@ data "aws_secretsmanager_secret_version" "postgrespass" {
   secret_id = "postgrespass"
 }
 
+# ---------------------------------------------------------------------
+# RDS Instance
+# ---------------------------------------------------------------------
 resource "aws_db_instance" "peardb" {
   identifier                = "peardb"
   engine                    = "postgres"
@@ -88,7 +177,7 @@ resource "aws_db_instance" "peardb" {
   skip_final_snapshot       = true
   vpc_security_group_ids    = [aws_security_group.allow_postgres.id]
   db_subnet_group_name      = aws_db_subnet_group.pear_db_subnet_group.name
-  
+
   tags = {
     Name = "peardb"
   }
@@ -100,71 +189,8 @@ output "db_host" {
 }
 
 # ---------------------------------------------------------------------
-# EC2 Security Group (unchanged)
+# Conditional EC2 Key Pair Creation + Secret Storage
 # ---------------------------------------------------------------------
-resource "aws_security_group" "ec2_security_group" {
-  name_prefix = "pear_api_sg"
-  vpc_id      = data.aws_vpc.default.id
-  
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 444
-    to_port     = 444
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  
-  ingress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "ec2_security_group"
-  }
-}
-
-# ---------------------------------------------------------------------
-# CONDITIONAL EC2 KEY PAIR CREATION + SECRET STORAGE
-# ---------------------------------------------------------------------
-
-# Check for existing Secrets
 data "aws_secretsmanager_secret" "existing_api_key" {
   name = "pear-api-private-key"
 }
@@ -178,7 +204,6 @@ locals {
   create_web_key = try(data.aws_secretsmanager_secret.existing_web_key.arn, null) == null
 }
 
-# API Key Pair
 resource "tls_private_key" "api_key" {
   count     = local.create_api_key ? 1 : 0
   algorithm = "RSA"
@@ -203,7 +228,6 @@ resource "aws_secretsmanager_secret_version" "api_private_key_version" {
   secret_string = tls_private_key.api_key[0].private_key_pem
 }
 
-# Web Key Pair
 resource "tls_private_key" "web_key" {
   count     = local.create_web_key ? 1 : 0
   algorithm = "RSA"
@@ -229,15 +253,15 @@ resource "aws_secretsmanager_secret_version" "web_private_key_version" {
 }
 
 # ---------------------------------------------------------------------
-# EC2 INSTANCES (unchanged, but now safe — keys created automatically)
+# EC2 Instances
 # ---------------------------------------------------------------------
 resource "aws_instance" "pear_api_ec2_instance" {
   ami                    = "ami-0b7e05c6022fc830b"
   instance_type          = "t3.micro"
   key_name               = "pear-api-key"
-  subnet_id              = data.aws_subnets.default.ids[0]
+  subnet_id              = aws_subnet.main_subnet_a.id
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
-  
+
   tags = {
     Name = "pear_api_ec2_instance"
   }
@@ -247,16 +271,16 @@ resource "aws_instance" "pear_web_ec2_instance" {
   ami                    = "ami-0b7e05c6022fc830b"
   instance_type          = "t3.micro"
   key_name               = "pear-web-key"
-  subnet_id              = data.aws_subnets.default.ids[1]
+  subnet_id              = aws_subnet.main_subnet_b.id
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
-  
+
   tags = {
     Name = "pear_web_ec2_instance"
   }
 }
 
 # ---------------------------------------------------------------------
-# BUDGET & EIPs (unchanged)
+# Budget & EIPs
 # ---------------------------------------------------------------------
 resource "aws_budgets_budget" "pear_budget" {
   name              = "pear_budget"
@@ -266,7 +290,7 @@ resource "aws_budgets_budget" "pear_budget" {
   time_period_end   = "2025-07-15_00:00"
   time_period_start = "2025-07-01_00:00"
   time_unit         = "MONTHLY"
-  
+
   notification {
     comparison_operator        = "EQUAL_TO"
     threshold                  = 50
@@ -274,7 +298,7 @@ resource "aws_budgets_budget" "pear_budget" {
     notification_type          = "FORECASTED"
     subscriber_email_addresses = var.budget_notification_emails
   }
-  
+
   notification {
     comparison_operator        = "EQUAL_TO"
     threshold                  = 75
@@ -282,8 +306,6 @@ resource "aws_budgets_budget" "pear_budget" {
     notification_type          = "FORECASTED"
     subscriber_email_addresses = var.budget_notification_emails
   }
-  
-  # (rest unchanged)
 }
 
 resource "aws_eip" "pear_api_ec2_eip" {
