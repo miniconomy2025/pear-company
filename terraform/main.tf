@@ -226,8 +226,8 @@ output "db_host" {
 # Conditional EC2 Key Pair Creation + Secret Storage
 # ---------------------------------------------------------------------
 locals {
-  create_api_key = true
-  create_web_key = true
+  create_api_key = false
+  create_web_key = fasle
 }
 
 resource "tls_private_key" "api_key" {
