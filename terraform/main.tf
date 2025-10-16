@@ -200,10 +200,11 @@ data "aws_secretsmanager_secret" "existing_web_key" {
 }
 
 locals {
-  create_api_key = try(data.aws_secretsmanager_secret.existing_api_key.arn, null) == null
-  create_web_key = try(data.aws_secretsmanager_secret.existing_web_key.arn, null) == null
+  create_api_key = true
+  create_web_key = true
 }
 
+# API Key Pair
 resource "tls_private_key" "api_key" {
   count     = local.create_api_key ? 1 : 0
   algorithm = "RSA"
@@ -228,6 +229,7 @@ resource "aws_secretsmanager_secret_version" "api_private_key_version" {
   secret_string = tls_private_key.api_key[0].private_key_pem
 }
 
+# Web Key Pair
 resource "tls_private_key" "web_key" {
   count     = local.create_web_key ? 1 : 0
   algorithm = "RSA"
