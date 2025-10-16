@@ -422,68 +422,52 @@ jobs:
             pm2 start index.js --name pear-api
           '
 
-      - name: Setup nginx proxy and self-signed SSL on API EC2
+      - name: Setup nginx proxy and obtain real SSL certificate for API EC2
         run: |
           EC2_HOST=${{ needs.terraform.outputs.apiec2host }}
           ssh -o StrictHostKeyChecking=no -i privatekey.pem "ubuntu@$EC2_HOST" '
-            # Create directory for SSL certs
-            sudo mkdir -p /etc/nginx/ssl
-            
-            # Generate self-signed certificate if not exists
-            if [ ! -f /etc/nginx/ssl/pear-api.crt ] || [ ! -f /etc/nginx/ssl/pear-api.key ]; then
-              sudo openssl req -x509 -nodes -days 365 \
-                -newkey rsa:2048 \
-                -keyout /etc/nginx/ssl/pear-api.key \
-                -out /etc/nginx/ssl/pear-api.crt \
-                -subj "/C=ZA/ST=WesternCape/L=CapeTown/O=PearCompany/OU=Dev/CN=ec2-15-240-5-215.af-south-1.compute.amazonaws.com"
-              echo "Self-signed certificate generated at /etc/nginx/ssl/"
-            else
-              echo "Self-signed certificate already exists, skipping generation"
-            fi
-            
-            # Create nginx config
+            DOMAIN="pear-api.duckdns.org"
+
+            # Install dependencies
+            sudo apt update
+            sudo apt install -y nginx certbot python3-certbot-nginx curl
+
+            # Configure nginx for HTTP (required for certbot HTTP challenge)
             sudo tee /etc/nginx/sites-enabled/default > /dev/null << "EOF_NGINX"
             server {
               listen 80;
-              server_name ec2-15-240-5-215.af-south-1.compute.amazonaws.com;
-              return 301 https://$host$request_uri;
-            }
+              server_name pear-api.duckdns.org;
 
-            server {
-              listen 443 ssl;
-              server_name ec2-15-240-5-215.af-south-1.compute.amazonaws.com;
-
-              ssl_certificate /etc/nginx/ssl/pear-api.crt;
-              ssl_certificate_key /etc/nginx/ssl/pear-api.key;
+              # Allow Certbot challenge validation
+              location /.well-known/acme-challenge/ {
+                  root /var/www/html;
+              }
 
               location / {
-                proxy_pass http://localhost:5000;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
+                  proxy_pass http://localhost:5000;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
               }
             }
           EOF_NGINX
-            
-            # Test nginx config
+
+            # Ensure nginx directory exists for challenges
+            sudo mkdir -p /var/www/html
+            sudo nginx -t && sudo systemctl restart nginx
+
+            # Run certbot to obtain certificate for DuckDNS domain
+            sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email franco.dubuisson@bbd.co.za
+
+            # Confirm certificate
+            sudo certbot certificates
+
+            # Reload nginx with SSL configuration
             sudo nginx -t
-            
-            # Ensure nginx is running before reload
-            sudo systemctl start nginx
-            sudo systemctl enable nginx
-            
-            # Check if nginx is active
-            if sudo systemctl is-active --quiet nginx; then
-              echo "Nginx is active, reloading..."
-              sudo systemctl reload nginx
-            else
-              echo "Nginx is not active, starting..."
-              sudo systemctl start nginx
-            fi
-            
-            # Verify nginx status
-            sudo systemctl status nginx --no-pager
+            sudo systemctl reload nginx
+
+            echo "SSL certificate successfully installed for $DOMAIN"
           '
 
   issue-certificates-web:
