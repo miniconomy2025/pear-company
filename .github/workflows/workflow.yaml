@@ -298,8 +298,6 @@ jobs:
             API_EC2_PRIVATE_KEY, apiprivatekey
             POSTGRES_USER, postgresuser
             POSTGRES_PASS, postgrespass
-            CLIENT_CERT_PATH, pear-company-client-cert
-            CLIENT_KEY_PATH, pear-company-client-key
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
