@@ -39,7 +39,7 @@ app.use(express.json())
 app.use(loggingMiddleware)
 
 const allowedOrigins = [
-  "https://pear-company.projects.bbdgrad.com",
+  "https://pear-web.duckdns.org",
   "http://localhost:3000", // for local dev
 ]
 
