@@ -225,17 +225,9 @@ output "db_host" {
 # ---------------------------------------------------------------------
 # Conditional EC2 Key Pair Creation + Secret Storage
 # ---------------------------------------------------------------------
-data "aws_secretsmanager_secret" "existing_api_key" {
-  name = "pear-api-private-key"
-}
-
-data "aws_secretsmanager_secret" "existing_web_key" {
-  name = "pear-web-private-key"
-}
-
 locals {
-  create_api_key = try(data.aws_secretsmanager_secret.existing_api_key.arn, null) == null
-  create_web_key = try(data.aws_secretsmanager_secret.existing_web_key.arn, null) == null
+  create_api_key = true
+  create_web_key = true
 }
 
 resource "tls_private_key" "api_key" {
