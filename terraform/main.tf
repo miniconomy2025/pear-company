@@ -88,7 +88,7 @@ resource "aws_route_table_association" "subnet_b" {
 }
 
 # ---------------------------------------------------------------------
-# DB Subnet Group
+# DB Subnet Group (only public subnets)
 # ---------------------------------------------------------------------
 resource "aws_db_subnet_group" "pear_db_subnet_group" {
   name       = "pear_db_subnet_group"
@@ -225,9 +225,17 @@ output "db_host" {
 # ---------------------------------------------------------------------
 # Conditional EC2 Key Pair Creation + Secret Storage
 # ---------------------------------------------------------------------
+data "aws_secretsmanager_secret" "existing_api_key" {
+  name = "pear-api-private-key"
+}
+
+data "aws_secretsmanager_secret" "existing_web_key" {
+  name = "pear-web-private-key"
+}
+
 locals {
-  create_api_key = true
-  create_web_key = true
+  create_api_key = try(data.aws_secretsmanager_secret.existing_api_key.arn, null) == null
+  create_web_key = try(data.aws_secretsmanager_secret.existing_web_key.arn, null) == null
 }
 
 resource "tls_private_key" "api_key" {
@@ -313,8 +321,7 @@ resource "aws_budgets_budget" "pear_budget" {
   budget_type       = "COST"
   limit_amount      = "25"
   limit_unit        = "USD"
-  time_period_end   = "2026-12-31_00:00"
-  time_period_start = "2025-01-01_00:00"
+  time_period_start = formatdate("YYYY-MM-DD", timestamp())
   time_unit         = "MONTHLY"
 
   notification {
@@ -337,6 +344,7 @@ resource "aws_budgets_budget" "pear_budget" {
 resource "aws_eip" "pear_api_ec2_eip" {
   instance = aws_instance.pear_api_ec2_instance.id
   domain   = "vpc"
+
   tags = {
     Name = "pear_api_eip"
   }
@@ -345,6 +353,7 @@ resource "aws_eip" "pear_api_ec2_eip" {
 resource "aws_eip" "pear_web_ec2_eip" {
   instance = aws_instance.pear_web_ec2_instance.id
   domain   = "vpc"
+
   tags = {
     Name = "pear_web_eip"
   }
