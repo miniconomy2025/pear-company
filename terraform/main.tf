@@ -321,7 +321,8 @@ resource "aws_budgets_budget" "pear_budget" {
   budget_type       = "COST"
   limit_amount      = "25"
   limit_unit        = "USD"
-  time_period_start = formatdate("YYYY-MM-DD", timestamp())
+  time_period_start = "2025-10-16_00:00"
+  time_period_end   = "2025-11-16_00:00"
   time_unit         = "MONTHLY"
 
   notification {
