@@ -4,17 +4,12 @@ import type {
   BulkCreatePickUpResponse,
   BulkPickUpResponse,
 } from "../types/extenalApis.js";
-import { httpsAgent } from "../config/httpClient.js";
+import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
 
 const BULK_LOGISTICS_BASE_URL = process.env.BULK_LOGISTICS_BASE_URL;
 
-const client = axios.create({
-  baseURL: BULK_LOGISTICS_BASE_URL,
-  timeout: 5000,
-  headers: { "Content-Type": "application/json" },
-  httpsAgent: httpsAgent,
-});
+const client = createHttpClient(BULK_LOGISTICS_BASE_URL);
 
 function handleError(err: unknown) {
   if (axios.isAxiosError(err)) {

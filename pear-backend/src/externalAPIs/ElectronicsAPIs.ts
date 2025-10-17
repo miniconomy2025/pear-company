@@ -4,17 +4,12 @@ import type {
   ElectronicsCreateOrderResponse,
   ElectronicsGetOrderResponse,
 } from "../types/extenalApis.js";
-import { httpsAgent } from "../config/httpClient.js";
+import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
 
 const ELECTRONICS_BASE_URL = process.env.ELECTRONICS_BASE_URL;
 
-const client = axios.create({
-  baseURL: ELECTRONICS_BASE_URL,
-  timeout: 5000,
-  headers: { "Content-Type": "application/json" },
-  httpsAgent: httpsAgent,
-});
+const client = createHttpClient(ELECTRONICS_BASE_URL);
 
 function handleError(err: unknown) {
   if (axios.isAxiosError(err)) {
