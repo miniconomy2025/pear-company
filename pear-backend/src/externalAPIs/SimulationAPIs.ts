@@ -6,17 +6,12 @@ import type {
   SimulationOrderPaymentResponse,
   ReceivePhoneRequest,
 } from "../types/extenalApis.js";
-import { httpsAgent } from "../config/httpClient.js";
+import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
 
 const SIMULATION_API_BASE_URL = process.env.SIMULATION_API_BASE_URL;
 
-const client = axios.create({
-  baseURL: SIMULATION_API_BASE_URL,
-  timeout: 5000,
-  headers: { "Content-Type": "application/json" },
-  httpsAgent: httpsAgent,
-});
+const client = createHttpClient(SIMULATION_API_BASE_URL);
 
 function handleError(err: unknown) {
   if (axios.isAxiosError(err)) {
