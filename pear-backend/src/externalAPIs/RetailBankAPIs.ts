@@ -1,4 +1,4 @@
-import axios from "axios";
+// src/externalAPIs/RetailBankAPIs.ts
 import type {
   RetailBankTransationRequest,
   RetailBankTransationResponse,
@@ -7,33 +7,23 @@ import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
 
 const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL;
-
 const client = createHttpClient(RETAIL_BANK_BASE_URL);
 
-function handleError(err: unknown) {
-  if (axios.isAxiosError(err)) {
-    console.error("API error:", err.response?.data ?? err.message);
-    throw err;
-  } else if (err instanceof Error) {
-    console.error("Error:", err.message);
-    throw err;
-  } else {
-    console.error("Unknown error:", err);
-    throw new Error(String(err));
-  }
-}
-
+/**
+ * WRITE: create a retail-bank transaction (money movement).
+ * On error, **throw** via fallback so callers can retry/compensate instead of “pretending success”.
+ * Success is any 2xx; Axios rejects non-2xx by default.
+ */
 export const createRetailTransaction = resilient(
   async (
     payload: RetailBankTransationRequest
   ): Promise<RetailBankTransationResponse | undefined> => {
     const res = await client.post("/transaction", payload);
-    if (res.status === 200) {
-      return res.data;
-    }
-    return undefined;
+    return res.data; // Axios only reaches here on 2xx
   },
   {
-    fallback: async (_payload: RetailBankTransationRequest) => undefined,
+    fallback: async () => {
+      throw new Error("Retail bank createTransaction failed (fallback)");
+    },
   }
 );

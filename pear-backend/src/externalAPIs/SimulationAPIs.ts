@@ -1,8 +1,8 @@
-import axios from "axios";
+// src/externalAPIs/SimulationAPIs.ts
 import type {
   SimulationTimeResponse,
   SimulationBuyMachineResponse,
-  SimulationMachineResponse,
+  SimulationMachineResponse, // (kept if used elsewhere)
   SimulationOrderPaymentResponse,
   ReceivePhoneRequest,
 } from "../types/extenalApis.js";
@@ -10,26 +10,15 @@ import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
 
 const SIMULATION_API_BASE_URL = process.env.SIMULATION_API_BASE_URL;
-
 const client = createHttpClient(SIMULATION_API_BASE_URL);
 
-function handleError(err: unknown) {
-  if (axios.isAxiosError(err)) {
-    console.error("API error:", err.response?.data ?? err.message);
-    throw err;
-  } else if (err instanceof Error) {
-    console.error("Error:", err.message);
-    throw err;
-  } else {
-    console.error("Unknown error:", err);
-    throw new Error(String(err));
-  }
-}
-
+/**
+ * READS — safe to degrade on failure
+ */
 export const getUnixEpochStartTime = resilient(
   async (): Promise<{ unixEpochStartTime: string } | undefined> => {
     const res = await client.get("/time");
-    return res.data;
+    return res.data; // Axios resolves for 2xx by default
   },
   { fallback: async () => undefined }
 );
@@ -42,6 +31,9 @@ export const getCurrentSimulationTime = resilient(
   { fallback: async () => undefined }
 );
 
+/**
+ * WRITES — must fail loudly so callers can retry/compensate
+ */
 export const purchaseMachine = resilient(
   async (
     machineName: string,
@@ -50,22 +42,32 @@ export const purchaseMachine = resilient(
     const res = await client.post("/machines", { machineName, quantity });
     return res.data;
   },
-  { fallback: async (_machineName: string, _quantity: number) => undefined }
+  {
+    fallback: async () => {
+      throw new Error("Simulation API: purchaseMachine failed (fallback)");
+    },
+  }
 );
 
 export const confirmMachinePayment = resilient(
-  async (
-    orderId: number
-  ): Promise<SimulationOrderPaymentResponse | undefined> => {
+  async (orderId: number): Promise<SimulationOrderPaymentResponse | undefined> => {
     const res = await client.post("/orders/payments", { orderId });
     return res.data;
   },
-  { fallback: async (_orderId: number) => undefined }
+  {
+    fallback: async () => {
+      throw new Error("Simulation API: confirmMachinePayment failed (fallback)");
+    },
+  }
 );
 
 export const receivePhone = resilient(
   async (request: ReceivePhoneRequest): Promise<void> => {
     await client.post("/receive-phone", request);
   },
-  { fallback: async (_request: ReceivePhoneRequest) => undefined }
+  {
+    fallback: async () => {
+      throw new Error("Simulation API: receivePhone failed (fallback)");
+    },
+  }
 );

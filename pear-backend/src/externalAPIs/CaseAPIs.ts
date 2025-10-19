@@ -1,4 +1,4 @@
-import axios from "axios";
+// src/externalAPIs/CaseAPIs.ts
 import type {
   CasesPriceResponse,
   CasesCreateOrderResponse,
@@ -8,58 +8,44 @@ import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
 
 const CASE_BASE_URL = process.env.CASE_BASE_URL;
-
 const client = createHttpClient(CASE_BASE_URL);
 
-function handleError(err: unknown) {
-  if (axios.isAxiosError(err)) {
-    console.error("API error:", err.response?.data ?? err.message);
-    throw err;
-  } else if (err instanceof Error) {
-    console.error("Error:", err.message);
-    throw err;
-  } else {
-    console.error("Unknown error:", err);
-    throw new Error(String(err));
-  }
-}
-
+/**
+ * READ: Get current case prices.
+ * Axios resolves only for 2xx by default; any non-2xx throws before returning here.
+ */
 const _getCases = async (): Promise<CasesPriceResponse | undefined> => {
-  try {
-    const res = await client.get("/cases");
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
+  const res = await client.get("/cases");
+  return res.data;
 };
 export const getCases = resilient(_getCases, {
-  fallback: async () => undefined,
+  fallback: async () => undefined, // safe to degrade on reads
 });
 
+/**
+ * WRITE: Create a case order.
+ * Must fail loudly on error so upstream code can retry/compensate.
+ * (Consider adding an Idempotency-Key header at the caller.)
+ */
 const _createCaseOrder = async (
   quantity: number
 ): Promise<CasesCreateOrderResponse | undefined> => {
-  try {
-    const res = await client.post("/orders", { quantity });
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
+  const res = await client.post("/orders", { quantity });
+  return res.data; // 2xx only
 };
 export const createCaseOrder = resilient(_createCaseOrder, {
-  fallback: async (_quantity: number) => undefined,
+  fallback: async () => {
+    throw new Error("Case create order failed (fallback)"); // do not silently continue on writes
+  },
 });
 
-const _getOrder = async (
-  id: number
-): Promise<CasesGetOrderResponse | undefined> => {
-  try {
-    const res = await client.get(`/orders/${id}`);
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
+/**
+ * READ: Fetch an order by id.
+ */
+const _getOrder = async (id: number): Promise<CasesGetOrderResponse | undefined> => {
+  const res = await client.get(`/orders/${id}`);
+  return res.data;
 };
 export const getOrder = resilient(_getOrder, {
-  fallback: async (_id: number) => undefined,
+  fallback: async () => undefined,
 });
