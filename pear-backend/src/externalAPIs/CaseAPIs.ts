@@ -26,7 +26,7 @@ function handleError(err: unknown) {
 
 const _getCases = async (): Promise<CasesPriceResponse | undefined> => {
   try {
-    const res = await client.get("/cases");
+    const res = await client.get("/api/cases");
     return res.data;
   } catch (err) {
     handleError(err);
@@ -40,7 +40,7 @@ const _createCaseOrder = async (
   quantity: number
 ): Promise<CasesCreateOrderResponse | undefined> => {
   try {
-    const res = await client.post("/orders", { quantity });
+    const res = await client.post("/api/orders", { quantity });
     return res.data;
   } catch (err) {
     handleError(err);
@@ -54,7 +54,7 @@ const _getOrder = async (
   id: number
 ): Promise<CasesGetOrderResponse | undefined> => {
   try {
-    const res = await client.get(`/orders/${id}`);
+    const res = await client.get(`/api/orders/${id}`);
     return res.data;
   } catch (err) {
     handleError(err);
