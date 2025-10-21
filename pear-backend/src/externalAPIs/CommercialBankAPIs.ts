@@ -36,7 +36,7 @@ export const createAccount = resilient(
       notification_url:
         "https://pear-api.duckdns.org/public-api",
     });
-    return res.data;
+    return res?.data?.account_number;
   },
   { fallback: async () => undefined }
 );
@@ -62,7 +62,7 @@ export const setNotificationUrl = resilient(
 export const getBalance = resilient(
   async (): Promise<number | undefined> => {
     const res = await client.get("/api/account/me/balance");
-    return res.data;
+    return res?.data?.balance;
   },
   { fallback: async () => 0 }
 );
@@ -70,14 +70,14 @@ export const getBalance = resilient(
 export const isAccountFrozen = resilient(
   async (): Promise<boolean | undefined> => {
     const res = await client.get("/api/account/me/frozen");
-    return res.data;
+    return res?.data?.frozen;
   },
   { fallback: async () => false }
 );
 
 export const getMyLoans = resilient(
   async (): Promise<CommercialBankLoansResponse | undefined> => {
-    const res = await client.get("/api/account/me/loans");
+    const res = await client.get("/api/loan");
     return res.data;
   },
   { fallback: async () => undefined }
