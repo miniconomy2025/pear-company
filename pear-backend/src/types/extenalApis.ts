@@ -63,7 +63,7 @@ export interface CasesGetOrderResponse {
   ordered_at: string,
   quantity: number,
   status: string,
-  total_price: string
+  total_price: number
 }
 
 export interface CustomersPickUpRequest {

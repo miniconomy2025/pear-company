@@ -61,7 +61,8 @@ export async function confirmMachinePayment(
     totalPrice: 64000,
     status: "completed",
     message: "Payment confirmed and machine order is processing.",
-    canFulfill: true
+    canFulfill: true,
+    availableQuantity: 30
   };
 }
 

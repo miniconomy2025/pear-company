@@ -56,15 +56,21 @@ export async function isAccountFrozen(): Promise<boolean | undefined> {
  */
 export async function getMyLoans(): Promise<CommercialBankLoansResponse | undefined> {
   return {
-    total_due: 4000.00,
+    total_outstanding_amount: 4000.00,
     loans: [
       {
         loan_number: "LN001",
-        due: 2500.00
+        initial_amount: 3000.00,
+        interest_rate: 0.2,
+        write_off: false,
+        outstanding_amount: 2500.00
       },
       {
         loan_number: "LN002",
-        due: 1500.00
+        initial_amount: 3000.00,
+        interest_rate: 0.1,
+        write_off: false,
+        outstanding_amount: 1500.00
       }
     ]
   };

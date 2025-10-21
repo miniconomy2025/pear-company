@@ -25,8 +25,7 @@ export async function createScreenOrder(
   return {
     orderId: 789,
     totalPrice: quantity * 1599.99,
-    bankAccountNumber: "BANK-SCREEN-987",
-    orderStatusLink: `https://mocked.screen.orders/status/789`
+    bankAccountNumber: "BANK-SCREEN-987"
   };
 }
 
@@ -42,7 +41,6 @@ export async function getOrder(
     unitPrice: 1599.99,
     totalPrice: 15999.90,
     status: "DELIVERED",
-    orderDate: new Date().toISOString(),
     amountPaid: 15999.90,
     remainingBalance: 0,
     isFullyPaid: true

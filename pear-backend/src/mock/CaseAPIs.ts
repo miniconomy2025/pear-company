@@ -41,6 +41,7 @@ export async function getOrder(
     order_status_id: "1",
     ordered_at: new Date().toISOString(),
     quantity: 100,
-    status: "PENDING"
+    status: "PENDING",
+    total_price: 200
   };
 }
