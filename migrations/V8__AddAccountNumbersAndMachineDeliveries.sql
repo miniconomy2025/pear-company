@@ -1,8 +1,8 @@
 ALTER TABLE bulk_deliveries
-ADD COLUMN account_number VARCHAR(12) NOT NULL;
+ADD COLUMN account_number VARCHAR(100) NOT NULL;
 
 ALTER TABLE consumer_deliveries
-ADD COLUMN account_number VARCHAR(12) NOT NULL;
+ADD COLUMN account_number VARCHAR(100) NOT NULL;
 
 ALTER TABLE machines
 ADD COLUMN date_acquired TIMESTAMP,
@@ -13,8 +13,8 @@ CREATE TABLE machine_deliveries (
     machine_id INT NOT NULL REFERENCES machines(machine_id),
     delivery_reference INT NOT NULL,
     cost DECIMAL NOT NULL,
-    address VARCHAR(50) NOT NULL,
-    account_number VARCHAR(12) NOT NULL,
+    address VARCHAR(100) NOT NULL,
+    account_number VARCHAR(100) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

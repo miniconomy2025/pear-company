@@ -4,14 +4,14 @@
 -- Create accounts table first (referenced by other tables)
 CREATE TABLE accounts (
     account_id SERIAL PRIMARY KEY,
-    account_name VARCHAR(20) NOT NULL,
-    account_number VARCHAR(10) NOT NULL UNIQUE
+    account_name VARCHAR(100) NOT NULL,
+    account_number VARCHAR(100) NOT NULL UNIQUE
 );
 
 -- Create status lookup table
 CREATE TABLE status (
     status_id SERIAL PRIMARY KEY,
-    description VARCHAR(30) NOT NULL UNIQUE
+    description VARCHAR(100) NOT NULL UNIQUE
 );
 
 -- Insert default status values
@@ -27,8 +27,8 @@ INSERT INTO status (description) VALUES
 -- Create phones table (product catalog)
 CREATE TABLE phones (
     phone_id SERIAL PRIMARY KEY,
-    model VARCHAR(30) NOT NULL UNIQUE,
-    price DECIMAL(10,2) NOT NULL CHECK (price > 0)
+    model VARCHAR(100) NOT NULL UNIQUE,
+    price DECIMAL(100,2) NOT NULL CHECK (price > 0)
 );
 
 -- Create stock table for phone inventory
@@ -51,7 +51,7 @@ CREATE TABLE machines (
 -- Create parts table (components for manufacturing)
 CREATE TABLE parts (
     part_id SERIAL PRIMARY KEY,
-    name VARCHAR(30) NOT NULL UNIQUE
+    name VARCHAR(100) NOT NULL UNIQUE
 );
 
 -- Create machine_ratios table (manufacturing recipes)
@@ -74,9 +74,9 @@ CREATE TABLE inventory (
 -- Create suppliers table
 CREATE TABLE suppliers (
     supplier_id SERIAL PRIMARY KEY,
-    name VARCHAR(30) NOT NULL,
+    name VARCHAR(100) NOT NULL,
     account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE RESTRICT,
-    address VARCHAR(50) NOT NULL
+    address VARCHAR(100) NOT NULL
 );
 
 -- Create parts_supplier table (supplier catalog with pricing)
@@ -84,7 +84,7 @@ CREATE TABLE parts_supplier (
     parts_supplier_id SERIAL PRIMARY KEY,
     part_id INTEGER NOT NULL REFERENCES parts(part_id) ON DELETE CASCADE,
     supplier_id INTEGER NOT NULL REFERENCES suppliers(supplier_id) ON DELETE CASCADE,
-    cost DECIMAL(10,2) NOT NULL CHECK (cost > 0),
+    cost DECIMAL(100,2) NOT NULL CHECK (cost > 0),
     UNIQUE(part_id, supplier_id)
 );
 
@@ -92,7 +92,7 @@ CREATE TABLE parts_supplier (
 CREATE TABLE parts_purchases (
     parts_purchase_id SERIAL PRIMARY KEY,
     reference_number INTEGER NOT NULL UNIQUE,
-    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
+    cost DECIMAL(100,2) NOT NULL CHECK (cost >= 0),
     status INTEGER NOT NULL REFERENCES status(status_id) DEFAULT 1,
     purchased_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -110,17 +110,17 @@ CREATE TABLE bulk_deliveries (
     bulk_delivery_id SERIAL PRIMARY KEY,
     parts_purchase_id INTEGER NOT NULL REFERENCES parts_purchases(parts_purchase_id) ON DELETE CASCADE,
     delivery_reference INTEGER NOT NULL UNIQUE,
-    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
+    cost DECIMAL(100,2) NOT NULL CHECK (cost >= 0),
     status INTEGER NOT NULL REFERENCES status(status_id) DEFAULT 1,
-    address VARCHAR(50) NOT NULL,
+    address VARCHAR(100) NOT NULL,
     account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE RESTRICT
 );
 
 -- Create orders table (customer orders)
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
-    price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
-    amount_paid DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (amount_paid >= 0),
+    price DECIMAL(100,2) NOT NULL CHECK (price >= 0),
+    amount_paid DECIMAL(100,2) NOT NULL DEFAULT 0 CHECK (amount_paid >= 0),
     status INTEGER NOT NULL REFERENCES status(status_id) DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -138,7 +138,7 @@ CREATE TABLE consumer_deliveries (
     consumer_delivery_id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
     delivery_reference INTEGER NOT NULL UNIQUE,
-    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
+    cost DECIMAL(100,2) NOT NULL CHECK (cost >= 0),
     status INTEGER NOT NULL REFERENCES status(status_id) DEFAULT 1,
     account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE RESTRICT
 );
@@ -146,8 +146,8 @@ CREATE TABLE consumer_deliveries (
 -- Create system_settings table (configuration)
 CREATE TABLE system_settings (
     system_setting_id SERIAL PRIMARY KEY,
-    key VARCHAR(30) NOT NULL UNIQUE,
-    value VARCHAR(30) NOT NULL
+    key VARCHAR(100) NOT NULL UNIQUE,
+    value VARCHAR(100) NOT NULL
 );
 
 -- Create indexes for better performance
