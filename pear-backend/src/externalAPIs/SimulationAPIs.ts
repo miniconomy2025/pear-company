@@ -57,7 +57,7 @@ export const confirmMachinePayment = resilient(
   async (
     orderId: number
   ): Promise<SimulationOrderPaymentResponse | undefined> => {
-    const res = await client.post("/orders/payments", { orderId });
+    const res = await client.post("/orders/payments", { description: orderId, companyName: "pear-company" });
     return res.data;
   },
   { fallback: async (_orderId: number) => undefined }

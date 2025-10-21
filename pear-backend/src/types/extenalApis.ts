@@ -30,7 +30,6 @@ export interface ScreensCreateOrderResponse {
   orderId: number,
   totalPrice: number,
   bankAccountNumber: string,
-  orderStatusLink: string,
 }
 
 export interface ScreensGetOrderResponse {
@@ -39,7 +38,6 @@ export interface ScreensGetOrderResponse {
   unitPrice: number,
   totalPrice: number,
   status: string,
-  orderDate: string,
   amountPaid: number,
   remainingBalance: number,
   isFullyPaid: boolean
@@ -65,6 +63,7 @@ export interface CasesGetOrderResponse {
   ordered_at: string,
   quantity: number,
   status: string,
+  total_price: string
 }
 
 export interface CustomersPickUpRequest {
@@ -155,6 +154,7 @@ export interface SimulationOrderPaymentResponse {
   status: string
   message: string
   canFulfill: boolean
+  availableQuantity: number
 }
 export interface MachineItem {
   machineName: string,
@@ -169,11 +169,14 @@ export interface SimulationMachineResponse {
 
 export interface LoanItems {
   loan_number: string,
-  due: number
+  initial_amount: number
+  interest_rate: number
+  write_off: boolean
+  outstanding_amount: number
 }
 
 export interface CommercialBankLoansResponse {
-  total_due: number,
+  total_outstanding_amount: number,
   loans: LoanItems[]
 }
 
