@@ -6,7 +6,7 @@ import axios, { AxiosInstance } from "axios";
 export const httpsAgent = new https.Agent({
   // cert: fs.readFileSync('/etc/nginx/client-certs/pear-company-client.crt'),
   // key: fs.readFileSync('/etc/nginx/client-certs/pear-company-client.key'),
-  // rejectUnauthorized: false,
+  rejectUnauthorized: false,
 })
 
 const CLIENT_ID = process.env.CLIENT_ID ?? "pear-company";
