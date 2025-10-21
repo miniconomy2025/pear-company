@@ -26,6 +26,9 @@ export interface ResilienceOptions<T extends (...args: any[]) => Promise<any>> {
   maxTotalDurationMs?: number;
 }
 
+// set global disabling/ enabling
+const RESILIENCE_DISABLED = true;
+
 function defaultIsRetryable(err: unknown): boolean {
   if ((err as AxiosError).isAxiosError) {
     const axErr = err as AxiosError;
@@ -39,6 +42,10 @@ export function resilient<T extends (...args: any[]) => Promise<any>>(
   fn: T,
   opts: ResilienceOptions<T> = {}
 ): T {
+
+  // disable/ enable resilience
+  if (RESILIENCE_DISABLED) return fn as T;
+
   const {
     retry = {},
     breaker = {
