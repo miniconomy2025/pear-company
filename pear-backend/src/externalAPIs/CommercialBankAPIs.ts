@@ -34,7 +34,7 @@ export const createAccount = resilient(
   async (): Promise<CommercialBankAccountResponse | undefined> => {
     const res = await client.post("/api/account", {
       notification_url:
-        "https://pear-company-api.projects.bbdgrad.com/public-api",
+        "https://pear-api.duckdns.org/public-api",
     });
     return res.data;
   },
@@ -44,7 +44,7 @@ export const createAccount = resilient(
 export const getMyAccount = resilient(
   async (): Promise<string | undefined> => {
     const res = await client.get("/api/account/me");
-    return res.data;
+    return res?.data?.account_number;
   },
   { fallback: async () => undefined }
 );

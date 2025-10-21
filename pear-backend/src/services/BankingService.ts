@@ -1,5 +1,5 @@
 import { pool } from "../config/database.js"
-import { createAccount, takeLoan, getBalance } from "../externalAPIs/CommercialBankAPIs.js"
+import { createAccount, getMyAccount, takeLoan, getBalance } from "../externalAPIs/CommercialBankAPIs.js"
 
 export class BankingService {
   private readonly MINIMUM_BALANCE = 1000000;
@@ -13,13 +13,26 @@ export class BankingService {
 
       const existingAccount = await client.query("SELECT value FROM system_settings WHERE key = 'bank_account_number'")
 
+      const accountFromBank = await getMyAccount();
+
       let accountNumber: string
 
-      if (existingAccount.rows.length > 0) {
-        accountNumber = existingAccount.rows[0].value
+      if (!!accountFromBank) {
+        if (existingAccount.rows.length > 0 && existingAccount.rows[0].value === accountFromBank) {
+          accountNumber = existingAccount.rows[0].value;
+        } else {
+          accountNumber = accountFromBank;
+
+          await client.query(
+            `INSERT INTO system_settings (key, value) 
+            VALUES ('bank_account_number', $1) 
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+            [accountNumber],
+          )
+        }
       } else {
  
-        const accountResponse = await createAccount()
+        const accountResponse = await createAccount();
 
         if (!accountResponse || !accountResponse.account_number) {
           throw new Error("Failed to create bank account")
