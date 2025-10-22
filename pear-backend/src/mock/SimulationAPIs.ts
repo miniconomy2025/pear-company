@@ -20,8 +20,9 @@ export async function getUnixEpochStartTime(): Promise<{ unixEpochStartTime: str
 export async function getCurrentSimulationTime(): Promise<SimulationTimeResponse | undefined> {
   const now = new Date();
   return {
-    date: now.toISOString().slice(0, 10), // YYYY-MM-DD
-    time: now.toISOString().slice(11, 19) // HH:MM:SS
+    simulationDate: now.toISOString().slice(0, 10), // YYYY-MM-DD
+    simulationTime: now.toISOString().slice(11, 19), // HH:MM:SS
+    simulationDay: 15,
   };
 }
 

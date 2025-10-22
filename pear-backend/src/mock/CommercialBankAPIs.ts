@@ -5,7 +5,7 @@ import {
   CommercialBankTransationResponse,
   CommercialBankTransationItemResponse,
   CommercialBankTakeLoanResponse,
-  CommercialBankLoanListResponse,
+  CommercialBankLoanListItemResponse,
   CommercialBankLoanPayResponse,
   CommercialBankLoanDetailsResponse,
   LoanItems,
@@ -56,6 +56,7 @@ export async function isAccountFrozen(): Promise<boolean | undefined> {
  */
 export async function getMyLoans(): Promise<CommercialBankLoansResponse | undefined> {
   return {
+    success: true,
     total_outstanding_amount: 4000.00,
     loans: [
       {
@@ -151,13 +152,12 @@ export async function takeLoan(
 /**
  * Mock: List all loans.
  */
-export async function listLoans(): Promise<Array<CommercialBankLoanListResponse> | undefined> {
+export async function listLoans(): Promise<CommercialBankLoanListItemResponse[] | undefined> {
   return [
     {
       loan_number: "LN001",
       initial_amount: 3000,
       interest_rate: 0.12,
-      started_at: Date.now() - 1000000,
       write_off: false,
       outstanding_amount: 1200
     },
@@ -165,7 +165,6 @@ export async function listLoans(): Promise<Array<CommercialBankLoanListResponse>
       loan_number: "LN002",
       initial_amount: 5000,
       interest_rate: 0.09,
-      started_at: Date.now() - 5000000,
       write_off: false,
       outstanding_amount: 4100
     }
@@ -192,23 +191,25 @@ export async function getLoan(
   loan_number: number
 ): Promise<CommercialBankLoanDetailsResponse | undefined> {
   return {
-    loan_number: String(loan_number),
-    initial_amount: 2000,
-    outstanding: 700,
-    interest_rate: 0.1,
-    started_at: Date.now() - 100000,
-    write_off: false,
-    payments: [
-      {
-        timestamp: Date.now() - 50000,
-        amount: 500,
-        is_interest: false
-      },
-      {
-        timestamp: Date.now() - 25000,
-        amount: 100,
-        is_interest: true
-      }
-    ]
+    success: true,
+    loan: {
+      loan_number: String(loan_number),
+      initial_amount: 2000,
+      outstanding_amount: 700,
+      interest_rate: 0.1,
+      write_off: false,
+      payments: [
+        {
+          timestamp: Date.now() - 50000,
+          amount: 500,
+          is_interest: false
+        },
+        {
+          timestamp: Date.now() - 25000,
+          amount: 100,
+          is_interest: true
+        }
+      ]
+    }
   };
 }

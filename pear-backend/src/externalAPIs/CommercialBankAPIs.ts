@@ -5,10 +5,11 @@ import type {
   CommercialBankTransationResponse,
   CommercialBankTransationItemResponse,
   CommercialBankTakeLoanResponse,
-  CommercialBankLoanListResponse,
+  CommercialBankLoanListItemResponse,
   CommercialBankLoanPayResponse,
   CommercialBankLoanDetailsResponse,
   CommercialBankAccountResponse,
+  CommercialGetBankTransationItemResponse,
 } from "../types/extenalApis.js";
 import { createHttpClient } from "../config/httpClient.js";
 import { resilient } from "../utils/resilience.js";
@@ -54,7 +55,7 @@ export const setNotificationUrl = resilient(
     const res = await client.post("/api/account/me/notify", {
       notification_url,
     });
-    return res.data;
+    return res?.data?.success;
   },
   { fallback: async (notification_url: string) => false }
 );
@@ -95,14 +96,14 @@ export const createTransaction = resilient(
 
 export const getStatement = resilient(
   async (
-    from: number,
-    to: number,
+    time_from: number,
+    time_to: number,
     only_successful: boolean
   ): Promise<CommercialBankTransationItemResponse[] | undefined> => {
     const res = await client.get("/api/transaction", {
-      params: { from, to, only_successful },
+      params: { time_from, time_to, only_successful },
     });
-    return res.data;
+    return res?.data?.transactions;
   },
   { fallback: async (from: number, to: number, only_successful: boolean) => [] }
 );
@@ -110,7 +111,7 @@ export const getStatement = resilient(
 export const getTransaction = resilient(
   async (
     transaction_number: number
-  ): Promise<CommercialBankTransationItemResponse | undefined> => {
+  ): Promise<CommercialGetBankTransationItemResponse | undefined> => {
     const res = await client.get(`/api/transaction/${transaction_number}`);
     return res.data;
   },
@@ -128,9 +129,9 @@ export const takeLoan = resilient(
 );
 
 export const listLoans = resilient(
-  async (): Promise<CommercialBankLoanListResponse[] | undefined> => {
+  async (): Promise<CommercialBankLoanListItemResponse[] | undefined> => {
     const res = await client.get("/api/loan");
-    return res.data;
+    return res?.data?.loans;
   },
   { fallback: async () => [] }
 );

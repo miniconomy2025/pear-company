@@ -43,8 +43,8 @@ export class PartsInventoryService {
         const client = await pool.connect();
         const pickupRes = await createPickupRequest({
         originalExternalOrderId: partsPurchaseId.toString(),
-        originCompanyId: `${address}-supplier`,
-        destinationCompanyId: "pear-company",
+        originCompany: `${address}-supplier`,
+        destinationCompany: "pear-company",
         items: [{
             itemName: address,
             quantity: quantity

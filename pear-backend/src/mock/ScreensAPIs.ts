@@ -10,8 +10,8 @@ import {
 export async function getScreens(): Promise<ScreensPriceResponse | undefined> {
   return {
     screens: {
-      availableStock: 320,
-      pricePerUnit: 1599.99,
+      quantity: 320,
+      price: 1599.99,
     }
   };
 }

@@ -21,8 +21,8 @@ export interface ElectronicsGetOrderResponse {
 
 export interface ScreensPriceResponse {
   screens: {
-    availableStock: number,
-    pricePerUnit: number,
+    quantity: number,
+    price: number,
   }
 }
 
@@ -98,8 +98,8 @@ export interface BulkItemRequest {
 
 export interface BulkCreatePickUpRequest {
   originalExternalOrderId: string,
-  originCompanyId: string,
-  destinationCompanyId: string,
+  originCompany: string,
+  destinationCompany: string,
   items: BulkItemRequest[]
 }
 
@@ -123,8 +123,9 @@ export interface BulkPickUpResponse {
 }
 
 export interface SimulationTimeResponse {
-  date: string,
-  time: string,
+  simulationDate: string,
+  simulationTime: string,
+  simulationDay: number
 }
 
 export interface SimulationBuyMachineResponse {
@@ -176,6 +177,7 @@ export interface LoanItems {
 }
 
 export interface CommercialBankLoansResponse {
+  success: boolean,
   total_outstanding_amount: number,
   loans: LoanItems[]
 }
@@ -203,18 +205,28 @@ export interface CommercialBankTransationItemResponse {
   timestamp: number
 }
 
+export interface CommercialGetBankTransationItemResponse {
+  success: boolean,
+  transaction_number: CommercialBankTransationItemResponse
+}
+
 export interface CommercialBankTakeLoanResponse {
   success: boolean,
   loan_number: string
 }
 
-export interface CommercialBankLoanListResponse {
+export interface CommercialBankLoanListItemResponse {
   loan_number: string,
   initial_amount: number,
   interest_rate: number,
-  started_at: number,
   write_off: boolean,
   outstanding_amount: number
+}
+
+export interface CommercialBankLoanListResponse {
+  success: boolean,
+  total_outstanding_amount: number,
+  loans: CommercialBankLoanListItemResponse[]
 }
 
 export interface CommercialBankLoanPayResponse {
@@ -229,13 +241,15 @@ export interface LoanPayments {
 }
 
 export interface CommercialBankLoanDetailsResponse {
-  loan_number: string,
-  initial_amount: number,
-  outstanding: number,
-  interest_rate: number,
-  started_at: number,
-  write_off: boolean,
-  payments: LoanPayments[]
+  success: boolean,
+  loan: {
+    loan_number: string,
+    initial_amount: number,
+    outstanding_amount: number,
+    interest_rate: number,
+    write_off: boolean,
+    payments: LoanPayments[]
+  }
 }
 
 export interface CommercialBankAccountResponse {

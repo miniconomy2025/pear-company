@@ -29,8 +29,8 @@ export class MachineLogisticsService {
 
       const pickupRequest: BulkCreatePickUpRequest = {
         originalExternalOrderId: orderResponse.orderId.toString(),
-        originCompanyId: "thoh",
-        destinationCompanyId: "pear-company",
+        originCompany: "thoh",
+        destinationCompany: "pear-company",
         items: items,
       }
 
