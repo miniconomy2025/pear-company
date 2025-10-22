@@ -155,11 +155,11 @@ export class MachinePurchasingService {
       await this.updateMachineOrderPayment(orderResponse.orderId, paymentResponse.transaction_number)
 
       // Step 5: Confirm payment with THOH
-      const confirmResponse = await confirmMachinePayment(orderResponse.orderId)
+      // const confirmResponse = await confirmMachinePayment(orderResponse.orderId)
 
-      if (!confirmResponse || confirmResponse.status !== "completed") {
-        throw new Error("Payment confirmation failed")
-      }
+      // if (!confirmResponse || confirmResponse.status !== "completed") {
+      //   throw new Error("Payment confirmation failed")
+      // }
 
 
       // Step 6: Update our database with completed machine
