@@ -24,9 +24,11 @@ export const createRetailTransaction = resilient(
   async (
     payload: RetailBankTransationRequest
   ): Promise<RetailBankTransationResponse | undefined> => {
-    console.log("/transaction", payload);
+    console.log("/transaction");
+    console.log(payload);
     try {
       const res = await client.post("/transaction", payload);
+      console.log('Response:', res.data);
       if (res.status === 200) {
         return res.data;
       }

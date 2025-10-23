@@ -36,6 +36,7 @@ export const createAccount = resilient(
         notification_url:
           "https://pear-api.duckdns.org/public-api",
       });
+      console.log('Response:', res.data);
       return res?.data?.account_number;
     } catch (err) {
       logError(err);
@@ -50,6 +51,7 @@ export const getMyAccount = resilient(
     console.log(`/api/account/me`);
     try {
       const res = await client.get("/api/account/me");
+      console.log('Response:', res.data);
       return res?.data?.account_number;
     } catch (err) {
       logError(err);
@@ -62,10 +64,12 @@ export const getMyAccount = resilient(
 export const setNotificationUrl = resilient(
   async (notification_url: string): Promise<boolean | undefined> => {
     console.log(`/api/account/me/notify`);
+    console.log(notification_url);
     try {
       const res = await client.post("/api/account/me/notify", {
         notification_url,
       });
+      console.log('Response:', res.data);
       return res?.data?.success;
     } catch (err) {
       logError(err);
@@ -80,6 +84,7 @@ export const getBalance = resilient(
     console.log(`/api/account/me/balance`);
     try {
     const res = await client.get("/api/account/me/balance");
+    console.log('Response:', res.data);
     return res?.data?.balance;
     } catch (err) {
       logError(err);
@@ -94,6 +99,7 @@ export const isAccountFrozen = resilient(
     console.log(`/api/account/me/frozen`);
     try {
     const res = await client.get("/api/account/me/frozen");
+    console.log('Response:', res.data);
     return res?.data?.frozen;
     } catch (err) {
       logError(err);
@@ -108,6 +114,7 @@ export const getMyLoans = resilient(
     console.log(`/api/loan`);
     try {
     const res = await client.get("/api/loan");
+    console.log('Response:', res.data);
     return res.data;
     } catch (err) {
       logError(err);
@@ -123,8 +130,9 @@ export const createTransaction = resilient(
   ): Promise<CommercialBankTransationResponse | undefined> => {
     console.log(`/api/transaction`);
     try {
-    console.log(payload)
-    const res = await client.post("/api/transaction", payload);
+      console.log(payload)
+      const res = await client.post("/api/transaction", payload);
+      console.log('Response:', res.data);
     return res.data;
     } catch (err) {
       logError(err);
@@ -141,10 +149,14 @@ export const getStatement = resilient(
     only_successful: boolean
   ): Promise<CommercialBankTransationItemResponse[] | undefined> => {
     console.log(`/api/transaction`);
+    console.log(time_from,
+    time_to,
+    only_successful);
     try {
-    const res = await client.get("/api/transaction", {
+      const res = await client.get("/api/transaction", {
       params: { time_from, time_to, only_successful },
     });
+    console.log('Response:', res.data);
     return res?.data?.transactions;
     } catch (err) {
       logError(err);
@@ -161,6 +173,7 @@ export const getTransaction = resilient(
     console.log(`/api/transaction/${transaction_number}`);
     try {
     const res = await client.get(`/api/transaction/${transaction_number}`);
+    console.log('Response:', res.data);
     return res.data;
     } catch (err) {
       logError(err);
@@ -174,9 +187,10 @@ export const takeLoan = resilient(
   async (
     amount: number
   ): Promise<CommercialBankTakeLoanResponse | undefined> => {
-    console.log(`/api/loan`);
+    console.log(`/api/loan`, {amount});
     try {
     const res = await client.post("/api/loan", { amount });
+    console.log('Response:', res.data);
     return res.data;
     } catch (err) {
       logError(err);
@@ -191,6 +205,7 @@ export const listLoans = resilient(
     console.log(`/api/loan`);
     try {
     const res = await client.get("/api/loan");
+    console.log('Response:', res.data);
     return res?.data?.loans;
     } catch (err) {
       logError(err);
@@ -208,6 +223,7 @@ export const repayLoan = resilient(
     console.log(`/api/loan/${loan_number}/pay`, { amount });
     try {
     const res = await client.post(`/api/loan/${loan_number}/pay`, { amount });
+    console.log('Response:', res.data);
     return res.data;
     } catch (err) {
       logError(err);
@@ -224,6 +240,7 @@ export const getLoan = resilient(
     console.log(`/api/loan/${loan_number}`);
     try {
       const res = await client.get(`/api/loan/${loan_number}`);
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);

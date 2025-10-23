@@ -26,6 +26,7 @@ export const getScreens = resilient(
     console.log("/screens");
     try {
       const res = await client.get("/screens");
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -40,6 +41,7 @@ export const createScreenOrder = resilient(
     console.log("/order", { quantity });
     try {
       const res = await client.post("/order", { quantity });
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -54,6 +56,7 @@ export const getOrder = resilient(
     console.log(`/order/${orderId}`);
     try {
       const res = await client.get(`/order/${orderId}`);
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);

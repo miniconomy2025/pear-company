@@ -26,6 +26,7 @@ export const getElectronics = resilient(
     console.log("/electronics");
     try {
       const res = await client.get("/electronics");
+      console.log('Response:', res.data);
       return res?.data;
     } catch (err) {
       logError(err);
@@ -42,6 +43,7 @@ export const createElectronicsOrder = resilient(
     console.log("/orders", { quantity });
     try {
       const res = await client.post("/orders", { quantity });
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -56,6 +58,7 @@ export const getOrder = resilient(
     console.log(`/orders/${orderId}`);
     try {
       const res = await client.get(`/orders/${orderId}`);
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);

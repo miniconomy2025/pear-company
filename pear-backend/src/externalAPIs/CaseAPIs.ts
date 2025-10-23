@@ -25,6 +25,7 @@ const _getCases = async (): Promise<CasesPriceResponse | undefined> => {
   console.log(`/api/cases`);
   try {
     const res = await client.get("/api/cases");
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
     logError(err);
@@ -41,6 +42,7 @@ const _createCaseOrder = async (
   console.log(`/api/orders`, quantity);
   try {
     const res = await client.post("/api/orders", { quantity });
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
     logError(err);
@@ -57,6 +59,7 @@ const _getOrder = async (
   console.log(`/api/orders`, id);
   try {
     const res = await client.get(`/api/orders/${id}`);
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
     logError(err);

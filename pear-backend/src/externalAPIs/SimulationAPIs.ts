@@ -28,6 +28,7 @@ export const getUnixEpochStartTime = resilient(
     console.log("/time");
     try {
       const res = await client.get("/time");
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -42,6 +43,7 @@ export const getCurrentSimulationTime = resilient(
     console.log("/current-simulation-time");
     try {
       const res = await client.get("/current-simulation-time");
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -56,9 +58,10 @@ export const purchaseMachine = resilient(
     machineName: string,
     quantity: number
   ): Promise<SimulationBuyMachineResponse | undefined> => {
-    console.log("/machines", { machineName, quantity });
+    console.log("/machines", machineName, quantity);
     try {
       const res = await client.post("/machines", { machineName, quantity });
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -72,9 +75,10 @@ export const confirmMachinePayment = resilient(
   async (
     orderId: number
   ): Promise<SimulationOrderPaymentResponse | undefined> => {
-    console.log("/orders/payments", { description: orderId, companyName: "pear-company" });
+    console.log("/orders/payments", orderId, "pear-company");
     try {
       const res = await client.post("/orders/payments", { description: orderId, companyName: "pear-company" });
+      console.log('Response:', res.data);
       return res.data;
     } catch (err) {
       logError(err);
@@ -86,7 +90,8 @@ export const confirmMachinePayment = resilient(
 
 export const receivePhone = resilient(
   async (request: ReceivePhoneRequest): Promise<void> => {
-    console.log("/receive-phone", request);
+    console.log("/receive-phone");
+    console.log(request);
     try {
       await client.post("/receive-phone", request);
     } catch (err) {

@@ -27,6 +27,7 @@ const _createPickupRequest = async (
   console.log(`/api/pickup-request`, request);
   try {
     const res = await client.post("/api/pickup-request", request);
+    console.log('Response:', res.data);
     return res.status === 201 ? res.data : undefined;
   } catch (err) {
     logError(err);
@@ -44,6 +45,7 @@ const _getPickupRequest = async (
   console.log(`/api/pickup-request/${pickupRequestId}`);
   try {
     const res = await client.get(`/api/pickup-request/${pickupRequestId}`);
+    console.log('Response:', res.data);
     if (res.status === 200) return res.data;
   } catch (err) {
     logError(err);
@@ -61,6 +63,7 @@ const _getPickupRequestsByCompany = async (
   console.log(`/api/pickup-request/company/${companyId}`);
   try {
     const res = await client.get(`/api/pickup-request/company/${companyId}`);
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
     logError(err);
