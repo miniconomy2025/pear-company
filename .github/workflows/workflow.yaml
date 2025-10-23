@@ -94,6 +94,9 @@ jobs:
         - name: Run K6 Load Test
           run: k6 run pear-backend/tests/load-test/LoadTest.js
 
+        - name: Run K6 Performance Test
+          run: k6 run pear-backend/tests/performance-test/PerformanceTest.js
+
   build-front-end:
     name: Build front-end
     runs-on: ubuntu-latest
