@@ -224,7 +224,7 @@ describe("LogisticsService", () => {
         accountNumber: "ACC-9",
         phoneName: "ePhone Ultra",
         id: "CD-1",
-        description: expect.stringContaining("order 42"),
+        description: "42",
       })
     );
   });
