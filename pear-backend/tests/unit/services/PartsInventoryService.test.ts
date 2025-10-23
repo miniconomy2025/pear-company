@@ -37,7 +37,7 @@ const createTransaction = jest.fn() as jest.MockedFunction<
 >;
 const createPickupRequest = jest.fn() as jest.MockedFunction<
   (req: any) => Promise<{
-    bulkLogisticsBankAccountNumber?: string;
+    accountNumber?: string;
     cost?: number;
     paymentReferenceId?: string;
     pickupRequestId?: string;
@@ -111,7 +111,7 @@ describe("PartsInventoryService", () => {
 
   it("requestBulkDelivery: inserts bulk delivery and pays logistics on success", async () => {
     createPickupRequest.mockResolvedValueOnce({
-      bulkLogisticsBankAccountNumber: "BL-ACC-123",
+      accountNumber: "BL-ACC-123",
       cost: 2500,
       paymentReferenceId: "PAY-42",
       pickupRequestId: "PU-999",
