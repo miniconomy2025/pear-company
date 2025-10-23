@@ -6,9 +6,9 @@ import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js";
 import { createPickupRequest } from "../externalAPIs/BulkLogisticsAPIs.js";
 
 const THRESHOLDS: { [key: string]: number } = {
-  screens: 500,
-  cases: 500,
-  electronics: 500,
+  Screens: 500,
+  Cases: 500,
+  Electronics: 500,
 };
 
 export class PartsInventoryService {
@@ -41,10 +41,10 @@ export class PartsInventoryService {
         threshold = 500
       }
 
-      console.log('currentLevel threshold', currentLevel, threshold);
+      console.log('currentLevel threshold', currentLevel, levels[part], threshold, THRESHOLDS[part]);
 
       if (currentLevel < threshold) {
-        const amountToOrder = THRESHOLDS[part] - currentLevel;
+        const amountToOrder = threshold - currentLevel;
         await this.orderPart(part, amountToOrder, simulatedDate);
       } 
     }
