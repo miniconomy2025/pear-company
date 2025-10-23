@@ -144,7 +144,7 @@ export class MachinePurchasingService {
         to_account_number: orderResponse.bankAccount,
         to_bank_name: "commercial-bank",
         amount: Number(orderResponse.totalPrice),
-        description: `Payment for ${quantity}x ${machineName} (Order #${orderResponse.orderId})`,
+        description: `${orderResponse.orderId}`,
       })
 
       if (!paymentResponse || !paymentResponse.success) {

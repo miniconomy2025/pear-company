@@ -80,7 +80,7 @@ export class PartsInventoryService {
           to_account_number: pickupRes.accountNumber,
           to_bank_name: "commercial-bank",
           amount: Number(pickupRes.cost),
-          description: `Payment for Order #${pickupRes.paymentReferenceId} for ${pickupRes.pickupRequestId}`
+          description: `${pickupRes.pickupRequestId}`
         });
     } catch (err) {
       console.error(`Failed to order ${address}:`, err);
@@ -102,7 +102,7 @@ export class PartsInventoryService {
               to_account_number: res.bankAccountNumber,
               to_bank_name: "commercial-bank",
               amount: Number(res.totalPrice),
-              description: `Payment for Order #${res.orderId} for ${part}`
+              description: `${res.orderId}`
             };
           }
           break;
@@ -115,7 +115,7 @@ export class PartsInventoryService {
               to_account_number: res.account_number,
               to_bank_name: "commercial-bank",
               amount: Number(res.total_price),
-              description: `Payment for Order #${res.id} for ${part}`
+              description: `${res.id}`
             };
           }
           break;
@@ -128,7 +128,7 @@ export class PartsInventoryService {
               to_account_number: res.bankNumber,
               to_bank_name: "commercial-bank",
               amount: Number(res.amountDue),
-              description: `Payment for Order #${res.orderId} for ${part}`
+              description: `${res.orderId}`
             };
           }
           break;

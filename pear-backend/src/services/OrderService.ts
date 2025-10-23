@@ -176,7 +176,7 @@ export class OrderService {
         to_account_number: pickupRes.accountNumber,
         to_bank_name: "commercial-bank",
         amount: Number(pickupRes?.amount) || 0,
-        description: `Payment for delivery #${ pickupRes?.refernceno}`
+        description: `${pickupRes?.refernceno}`
       });
 
       await client.query("COMMIT");
