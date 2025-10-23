@@ -123,6 +123,7 @@ export const createTransaction = resilient(
   ): Promise<CommercialBankTransationResponse | undefined> => {
     console.log(`/api/transaction`);
     try {
+    console.log(payload)
     const res = await client.post("/api/transaction", payload);
     return res.data;
     } catch (err) {
