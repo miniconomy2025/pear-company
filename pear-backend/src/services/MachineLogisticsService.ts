@@ -146,6 +146,17 @@ export class MachineLogisticsService {
     try {
       await client.query("BEGIN")
 
+      const deliveryResultMoreThan1 = await client.query(
+        `
+      SELECT md.*, mp.phone_id, mp.machines_purchased, mp.rate_per_day, 
+             mp.total_cost, p.model as phone_model, mp.reference_number as thoh_order_id
+      FROM machine_deliveries md
+      JOIN machine_purchases mp ON md.machine_purchases_id = mp.machine_purchases_id
+      JOIN phones p ON mp.phone_id = p.phone_id
+      WHERE md.delivery_reference = $1
+    `,
+        [deliveryReference],
+      )
 
       const deliveryResult = await client.query(
         `
@@ -160,7 +171,10 @@ export class MachineLogisticsService {
       )
 
       if (deliveryResult.rowCount === 0) {
-        throw new Error(`Machine delivery record not found for pickup request ${deliveryReference}`)
+        if (deliveryResultMoreThan1.rowCount === 0) {
+          throw new Error(`Machine delivery record not found for pickup request ${deliveryReference}`);
+        }
+        return true;
       }
 
       const delivery = deliveryResult.rows[0]

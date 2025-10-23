@@ -26,6 +26,7 @@ const dbConfig = {
   max: 20,
   idleTimeoutMillis: 90000,
   connectionTimeoutMillis: 90000, 
+  keepAlive: true,
 }
 
 
