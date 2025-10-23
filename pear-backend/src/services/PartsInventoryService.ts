@@ -6,9 +6,9 @@ import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js";
 import { createPickupRequest } from "../externalAPIs/BulkLogisticsAPIs.js";
 
 const THRESHOLDS: { [key: string]: number } = {
-  Screens: 500,
-  Cases: 500,
-  Electronics: 500,
+  Screens: 5000,
+  Cases: 5000,
+  Electronics: 5000,
 };
 
 export class PartsInventoryService {
@@ -43,8 +43,10 @@ export class PartsInventoryService {
 
       console.log('currentLevel threshold', currentLevel, levels[part], threshold, THRESHOLDS[part]);
 
-      if (currentLevel < threshold) {
-        const amountToOrder = threshold - currentLevel;
+      // if (currentLevel < threshold) {
+      if (currentLevel > 1000 || currentLevel < threshold) {
+        // let amountToOrder = threshold - currentLevel;
+        let amountToOrder = 1000;
         await this.orderPart(part, amountToOrder, simulatedDate);
       } 
     }
@@ -67,10 +69,7 @@ export class PartsInventoryService {
           return;
         }
 
-        const refRes = await client.query<{ nextval: number }>(
-        `SELECT nextval('bulk_deliveries_bulk_delivery_id_seq') AS nextval`
-        );
-        const deliveryReference = refRes.rows[0].nextval;
+        const deliveryReference = pickupRes.pickupRequestId;
 
         const statusRes = await client.query<{ status_id: number }>(
         `SELECT status_id FROM status WHERE description = 'Pending'`
@@ -106,6 +105,7 @@ export class PartsInventoryService {
       const simTime = simulatedDate.toISOString();
 
       let order;
+      let refNum;
       switch (part) {
         case "Screens": {
           const res = await createScreenOrder(quantity);
@@ -117,6 +117,7 @@ export class PartsInventoryService {
               amount: Number(res.totalPrice),
               description: `${res.orderId}`
             };
+            refNum = res.orderId;
           }
           break;
         }
@@ -130,6 +131,7 @@ export class PartsInventoryService {
               amount: Number(res.total_price),
               description: `${res.id}`
             };
+            refNum = res.id;
           }
           break;
         }
@@ -143,6 +145,7 @@ export class PartsInventoryService {
               amount: Number(res.amountDue),
               description: `${res.orderId}`
             };
+            refNum = res.orderId;
           }
           break;
         }
@@ -166,10 +169,7 @@ export class PartsInventoryService {
       );
       const partId = partRes.rows[0].part_id;
       
-      const refRes = await client.query<{ nextval: number }>(
-        `SELECT nextval('parts_purchases_reference_number_seq') AS nextval`
-      );
-      const referenceNumber = refRes.rows[0].nextval;
+      const referenceNumber = refNum;
 
       const statusRes = await client.query<{ status_id: number }>(
         `SELECT status_id FROM status WHERE description = 'Pending'`

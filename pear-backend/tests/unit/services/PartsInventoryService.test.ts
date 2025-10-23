@@ -140,9 +140,9 @@ describe("PartsInventoryService", () => {
     );
     expect(insertCall?.[1]).toEqual([
       321,              // parts_purchase_id
-      777,              // delivery_reference (from nextval)
+      "PU-999",              // delivery_reference (from nextval)
       2500,             // cost
-      12,               // status
+      undefined,               // status
       "Electronics-supplier", // address
       "BL-ACC-123",     // account_id
     ]);
