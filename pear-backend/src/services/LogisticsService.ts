@@ -207,7 +207,7 @@ export class LogisticsService {
       accountNumber: row.account_number,
       phoneName: order.model,
       id: row.delivery_reference,
-      description: `Phone delivery for order ${row.order_id}`,
+      description: `${row.order_id}`,
     };
 
     await receivePhone(request);
