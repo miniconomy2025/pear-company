@@ -93,6 +93,7 @@ export class PartsInventoryService {
           amount: Number(pickupRes.cost),
           description: `${pickupRes.pickupRequestId}`
         });
+        client.release()
     } catch (err) {
       console.error(`Failed to order ${address}:`, err);
     }
@@ -188,6 +189,7 @@ export class PartsInventoryService {
       const partsPurchaseId = purchaseRes.rows[0].parts_purchase_id;
 
       await this.requestBulkDelivery(partsPurchaseId, part, quantity, refNum);
+      client.release()
     } catch (err) {
       console.error(`Failed to order ${part}:`, err);
     }

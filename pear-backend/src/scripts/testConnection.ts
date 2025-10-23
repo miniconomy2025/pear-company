@@ -27,9 +27,9 @@ async function testDatabaseConnection() {
     connectionTimeoutMillis: 9000, // Increased timeout
   })
 
+  const client = await pool.connect()
   try {
     console.log("\n🔄 Attempting to connect...")
-    const client = await pool.connect()
 
     console.log("✅ Connection successful!")
 
@@ -66,7 +66,7 @@ async function testDatabaseConnection() {
       console.error("Error code:", (error as any).code)
     }
   } finally {
-    await pool.end()
+    client.release()
     process.exit(0)
   }
 }
