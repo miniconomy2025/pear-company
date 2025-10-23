@@ -23,8 +23,8 @@ async function testDatabaseConnection() {
     password: process.env.DB_PASSWORD,
     ssl: false, // Disable SSL for local development
     max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000, // Increased timeout
+    idleTimeoutMillis: 90000,
+    connectionTimeoutMillis: 9000, // Increased timeout
   })
 
   try {
