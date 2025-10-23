@@ -32,6 +32,9 @@ const takeLoan = jest.fn() as jest.MockedFunction<
 const getBalance = jest.fn() as jest.MockedFunction<
   () => Promise<number | undefined>
 >;
+const getMyAccount = jest.fn() as jest.MockedFunction<
+  () => Promise<string | undefined | number>
+>;
 
 /** Important: mock the exact .js import paths your service uses */
 jest.mock("../../../src/config/database.js", () => ({
@@ -43,9 +46,11 @@ jest.mock("../../../src/externalAPIs/CommercialBankAPIs.js", () => ({
   createAccount,
   takeLoan,
   getBalance,
+  getMyAccount,
 }));
 
 import { BankingService } from "../../../src/services/BankingService";
+// import { getMyAccount } from "../../../src/externalAPIs/CommercialBankAPIs";
 
 let svc: BankingService;
 

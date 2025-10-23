@@ -20,8 +20,18 @@ const config: Config.InitialOptions = {
         },
       },
     ],
+    "^.+\\.js$": "babel-jest",
   },
-  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts", "!src/index.ts", "!src/scripts/**", "!src/types/**"],
+  transformIgnorePatterns: [
+    "node_modules/(?!(p-timeout|p-retry|opossum)/)",
+  ],
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!src/index.ts",
+    "!src/scripts/**",
+    "!src/types/**",
+  ],
   coverageThreshold: {
     global: {
       branches: 80,
