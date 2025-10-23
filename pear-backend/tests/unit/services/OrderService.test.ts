@@ -187,7 +187,7 @@ describe("OrderService", () => {
         to_account_number: "LOGI-ACC-7",
         to_bank_name: "commercial-bank",
         amount: 2500,
-        description: "Payment for delivery #PK-REF-1",
+        description: "PK-REF-1",
       });
     });
   });
