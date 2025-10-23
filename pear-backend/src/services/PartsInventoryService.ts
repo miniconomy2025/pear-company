@@ -79,7 +79,7 @@ export class PartsInventoryService {
         await createTransaction({
           to_account_number: pickupRes.accountNumber,
           to_bank_name: "commercial-bank",
-          amount: pickupRes.cost,
+          amount: Number(pickupRes.cost),
           description: `Payment for Order #${pickupRes.paymentReferenceId} for ${pickupRes.pickupRequestId}`
         });
     } catch (err) {
@@ -101,7 +101,7 @@ export class PartsInventoryService {
             order = {
               to_account_number: res.bankAccountNumber,
               to_bank_name: "commercial-bank",
-              amount: res.totalPrice,
+              amount: Number(res.totalPrice),
               description: `Payment for Order #${res.orderId} for ${part}`
             };
           }
@@ -114,7 +114,7 @@ export class PartsInventoryService {
             order = {
               to_account_number: res.account_number,
               to_bank_name: "commercial-bank",
-              amount: res.total_price,
+              amount: Number(res.total_price),
               description: `Payment for Order #${res.id} for ${part}`
             };
           }
@@ -127,7 +127,7 @@ export class PartsInventoryService {
             order = {
               to_account_number: res.bankNumber,
               to_bank_name: "commercial-bank",
-              amount: res.amountDue,
+              amount: Number(res.amountDue),
               description: `Payment for Order #${res.orderId} for ${part}`
             };
           }

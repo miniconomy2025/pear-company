@@ -175,7 +175,7 @@ export class OrderService {
       await createTransaction({
         to_account_number: pickupRes.accountNumber,
         to_bank_name: "commercial-bank",
-        amount: pickupRes?.amount || 0,
+        amount: Number(pickupRes?.amount) || 0,
         description: `Payment for delivery #${ pickupRes?.refernceno}`
       });
 

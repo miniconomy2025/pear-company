@@ -45,7 +45,7 @@ export class MachineLogisticsService {
       const paymentResponse = await createTransaction({
         to_account_number: pickupResponse.accountNumber,
         to_bank_name: "commercial-bank",
-        amount: pickupResponse.cost,
+        amount: Number(pickupResponse.cost),
         description:  `${pickupResponse.pickupRequestId}`,
       })
 

@@ -143,7 +143,7 @@ export class MachinePurchasingService {
       const paymentResponse = await createTransaction({
         to_account_number: orderResponse.bankAccount,
         to_bank_name: "commercial-bank",
-        amount: orderResponse.totalPrice,
+        amount: Number(orderResponse.totalPrice),
         description: `Payment for ${quantity}x ${machineName} (Order #${orderResponse.orderId})`,
       })
 
