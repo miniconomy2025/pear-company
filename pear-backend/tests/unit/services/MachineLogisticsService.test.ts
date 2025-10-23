@@ -68,7 +68,7 @@ describe("MachineLogisticsService", () => {
 
     const pickupResponse = {
       pickupRequestId: 123,
-      bulkLogisticsBankAccountNumber: "123456|PAID",
+      accountNumber: "123456|PAID",
       cost: 500,
       paymentReferenceId: "PAY123",
     } as Partial<BulkCreatePickUpResponse> as BulkCreatePickUpResponse;
@@ -91,7 +91,7 @@ describe("MachineLogisticsService", () => {
     );
     expect(mockCreateTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
-        to_account_number: pickupResponse.bulkLogisticsBankAccountNumber,
+        to_account_number: pickupResponse.accountNumber,
         amount: pickupResponse.cost,
       })
     );

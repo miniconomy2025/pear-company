@@ -107,7 +107,7 @@ export interface BulkCreatePickUpResponse {
   pickupRequestId: number,
   cost: number,
   paymentReferenceId: string,
-  bulkLogisticsBankAccountNumber: string,
+  accountNumber: string,
   status: string,
   statusCheckUrl: string
 }

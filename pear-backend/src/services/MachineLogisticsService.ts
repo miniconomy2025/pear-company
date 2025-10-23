@@ -43,7 +43,7 @@ export class MachineLogisticsService {
       await this.storePickupRequest(machineOrderId, pickupResponse)
 
       const paymentResponse = await createTransaction({
-        to_account_number: pickupResponse.bulkLogisticsBankAccountNumber,
+        to_account_number: pickupResponse.accountNumber,
         to_bank_name: "commercial-bank",
         amount: pickupResponse.cost,
         description: `Logistics payment for machine pickup (Request #${pickupResponse.pickupRequestId}, Ref: ${pickupResponse.paymentReferenceId})`,
@@ -56,7 +56,7 @@ export class MachineLogisticsService {
       // Step 4: Update pickup record with payment info
       await this.updatePickupPayment(
         pickupResponse.pickupRequestId,
-        pickupResponse.bulkLogisticsBankAccountNumber,
+        pickupResponse.accountNumber,
         
       )
 
@@ -82,7 +82,7 @@ export class MachineLogisticsService {
           pickupResponse.pickupRequestId,
           pickupResponse.cost,
           "pear-company", 
-          pickupResponse.bulkLogisticsBankAccountNumber
+          pickupResponse.accountNumber
         ],
       )
 

@@ -15,7 +15,7 @@ export async function createPickupRequest(
     pickupRequestId: 12345,
     cost: 5000,
     paymentReferenceId: "MOCK_PAYMENT_REF_001",
-    bulkLogisticsBankAccountNumber: "9876543210",
+    accountNumber: "9876543210",
     status: "PENDING",
     statusCheckUrl: "https://mocked.example.com/status/12345"
   };

@@ -51,7 +51,7 @@ export class PartsInventoryService {
           }]
         });
         
-        if (!pickupRes?.bulkLogisticsBankAccountNumber || !pickupRes?.cost || !pickupRes?.paymentReferenceId || !pickupRes?.pickupRequestId) {
+        if (!pickupRes?.accountNumber || !pickupRes?.cost || !pickupRes?.paymentReferenceId || !pickupRes?.pickupRequestId) {
           return;
         }
 
@@ -72,12 +72,12 @@ export class PartsInventoryService {
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING bulk_delivery_id
         `,
-        [partsPurchaseId, deliveryReference, pickupRes.cost, statusId, `${address}-supplier`, pickupRes.bulkLogisticsBankAccountNumber]
+        [partsPurchaseId, deliveryReference, pickupRes.cost, statusId, `${address}-supplier`, pickupRes.accountNumber]
         );
         const bulkDeliveryId = rows[0].bulk_delivery_id;
 
         await createTransaction({
-          to_account_number: pickupRes.bulkLogisticsBankAccountNumber,
+          to_account_number: pickupRes.accountNumber,
           to_bank_name: "commercial-bank",
           amount: pickupRes.cost,
           description: `Payment for Order #${pickupRes.paymentReferenceId} for ${pickupRes.pickupRequestId}`
