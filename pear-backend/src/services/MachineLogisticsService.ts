@@ -46,7 +46,7 @@ export class MachineLogisticsService {
         to_account_number: pickupResponse.accountNumber,
         to_bank_name: "commercial-bank",
         amount: pickupResponse.cost,
-        description: `Logistics payment for machine pickup (Request #${pickupResponse.pickupRequestId}, Ref: ${pickupResponse.paymentReferenceId})`,
+        description:  `${pickupResponse.pickupRequestId}`,
       })
 
       if (!paymentResponse || !paymentResponse.success) {

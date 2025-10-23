@@ -24,7 +24,7 @@ function logError(err: unknown) {
 const _createPickupRequest = async (
   request: BulkCreatePickUpRequest
 ): Promise<BulkCreatePickUpResponse | undefined> => {
-  console.log(`/api/pickup-request ${request}`);
+  console.log(`/api/pickup-request`, request);
   try {
     const res = await client.post("/api/pickup-request", request);
     return res.status === 201 ? res.data : undefined;
