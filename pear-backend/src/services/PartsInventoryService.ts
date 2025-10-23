@@ -31,8 +31,19 @@ export class PartsInventoryService {
     console.log('checkAndOrderLowStock', levels);
 
     for (const part of ["Screens", "Cases", "Electronics"]) {
-      const currentLevel = levels[part] || 0;
-      if (currentLevel < THRESHOLDS[part]) {
+      let currentLevel = levels[part];
+      let threshold = THRESHOLDS[part];
+
+      if (!currentLevel) {
+        currentLevel = 0
+      }
+      if (!threshold) {
+        threshold = 500
+      }
+
+      console.log('currentLevel threshold', currentLevel, threshold);
+
+      if (currentLevel < threshold) {
         const amountToOrder = THRESHOLDS[part] - currentLevel;
         await this.orderPart(part, amountToOrder, simulatedDate);
       } 

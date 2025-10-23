@@ -8,6 +8,8 @@ export class ManufacturingService {
             await client.query("BEGIN");
             const simTime = simulatedDate.toISOString();
 
+            console.log('phoneManufacturing')
+
             const machinesRes = await client.query<{
                 machine_id: number;
                 rate_per_day: number;
@@ -17,6 +19,7 @@ export class ManufacturingService {
                 WHERE phone_id = $1`,
                 [phoneId]
             );
+            console.log('machinesRes', machinesRes);
             if (machinesRes.rowCount === 0) {
                 return;
             }
@@ -31,6 +34,7 @@ export class ManufacturingService {
                         quantity_available
                 FROM inventory`
             );
+            console.log('partsRes', partsRes);
 
             const partUsage = new Map<number, number>();
             let phoneProduction = 0;
@@ -75,6 +79,7 @@ export class ManufacturingService {
             }
 
             for (const [part_id, used] of partUsage.entries()) {
+                console.log('partUsage', part_id, used);
                 await client.query(
                 `UPDATE inventory
                     SET quantity_available = quantity_available - $2
@@ -82,6 +87,7 @@ export class ManufacturingService {
                 [part_id, used]
                 );
             }
+            console.log('phoneId phoneProduction', phoneId, phoneProduction);
             await client.query(
                 `UPDATE stock
                     SET quantity_available = quantity_available + $2,
@@ -130,6 +136,7 @@ export class ManufacturingService {
     async processManufacturing(simulatedDate: Date): Promise<void> {
         try {
             const phoneDemand = await this.calculatePhoneDemand();
+            console.log('processManufacturing', phoneDemand)
             phoneDemand.sort((a, b) => a.stockNeeded - b.stockNeeded);
 
             for (const { phone_id, demand } of phoneDemand) {
