@@ -100,7 +100,7 @@ describe("PartsInventoryService", () => {
   it("requestBulkDelivery: returns early when pickup response lacks required fields", async () => {
     createPickupRequest.mockResolvedValueOnce({}); // missing all fields
 
-    const res = await svc.requestBulkDelivery(99, "Screens", 50);
+    const res = await svc.requestBulkDelivery(99, "Screens", 50, 0);
     expect(createPickupRequest).toHaveBeenCalled();
     // No DB writes, no transaction
     expect(createTransaction).not.toHaveBeenCalled();
@@ -124,7 +124,7 @@ describe("PartsInventoryService", () => {
     // INSERT bulk_deliveries RETURNING id
     client.query.mockResolvedValueOnce({ rows: [{ bulk_delivery_id: 555 }] } as any);
 
-    await svc.requestBulkDelivery(321, "Electronics", 80);
+    await svc.requestBulkDelivery(321, "Electronics", 80, 0);
 
     // Check transaction call
     expect(createTransaction).toHaveBeenCalledWith({

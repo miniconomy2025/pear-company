@@ -52,11 +52,11 @@ export class PartsInventoryService {
     }
   }
 
-  async requestBulkDelivery(partsPurchaseId: number, address: string, quantity: number): Promise<void> {
+  async requestBulkDelivery(partsPurchaseId: number, address: string, quantity: number, id: number): Promise<void> {
     try {
         const client = await pool.connect();
         const pickupRes = await createPickupRequest({
-        originalExternalOrderId: partsPurchaseId.toString(),
+        originalExternalOrderId: id.toString(),
         originCompany: `${address}-supplier`,
         destinationCompany: "pear-company",
         items: [{
@@ -154,7 +154,7 @@ export class PartsInventoryService {
       }
       console.log('stock to order', order);
 
-      if (!order) {
+      if (!order || !refNum) {
         return;
       }
       const paymentResponse = await createTransaction(order);
@@ -187,7 +187,7 @@ export class PartsInventoryService {
       );
       const partsPurchaseId = purchaseRes.rows[0].parts_purchase_id;
 
-      await this.requestBulkDelivery(partsPurchaseId, part, quantity);
+      await this.requestBulkDelivery(partsPurchaseId, part, quantity, refNum);
     } catch (err) {
       console.error(`Failed to order ${part}:`, err);
     }
