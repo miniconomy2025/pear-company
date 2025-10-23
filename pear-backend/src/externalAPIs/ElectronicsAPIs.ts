@@ -11,23 +11,26 @@ const ELECTRONICS_BASE_URL = process.env.ELECTRONICS_BASE_URL;
 
 const client = createHttpClient(ELECTRONICS_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
 export const getElectronics = resilient(
   async (): Promise<ElectronicsPriceResponse | undefined> => {
-    const res = await client.get("/electronics");
-    return res?.data;
+    console.log("/electronics");
+    try {
+      const res = await client.get("/electronics");
+      return res?.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
   },
   { fallback: async () => undefined }
 );
@@ -36,16 +39,28 @@ export const createElectronicsOrder = resilient(
   async (
     quantity: number
   ): Promise<ElectronicsCreateOrderResponse | undefined> => {
-    const res = await client.post("/orders", { quantity });
-    return res.data;
+    console.log("/orders", { quantity });
+    try {
+      const res = await client.post("/orders", { quantity });
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
   },
   { fallback: async (quantity: number) => undefined }
 );
 
 export const getOrder = resilient(
   async (orderId: number): Promise<ElectronicsGetOrderResponse | undefined> => {
-    const res = await client.get(`/orders/${orderId}`);
-    return res.data;
+    console.log(`/orders/${orderId}`);
+    try {
+      const res = await client.get(`/orders/${orderId}`);
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
   },
   { fallback: async (orderId: number) => undefined }
 );

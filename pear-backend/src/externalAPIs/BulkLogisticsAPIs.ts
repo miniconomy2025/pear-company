@@ -11,25 +11,27 @@ const BULK_LOGISTICS_BASE_URL = process.env.BULK_LOGISTICS_BASE_URL;
 
 const client = createHttpClient(BULK_LOGISTICS_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
 const _createPickupRequest = async (
   request: BulkCreatePickUpRequest
 ): Promise<BulkCreatePickUpResponse | undefined> => {
-  const res = await client.post("/api/pickup-request", request);
-  if (res.status === 201) return res.data;
-  throw new Error(`Unexpected response status: ${res.status}`);
+  console.log(`/api/pickup-request ${request}`);
+  try {
+    const res = await client.post("/api/pickup-request", request);
+    return res.status === 201 ? res.data : undefined;
+  } catch (err) {
+    logError(err);
+    return undefined;
+  }
 };
 
 export const createPickupRequest = resilient(_createPickupRequest, {
@@ -39,9 +41,14 @@ export const createPickupRequest = resilient(_createPickupRequest, {
 const _getPickupRequest = async (
   pickupRequestId: number
 ): Promise<BulkPickUpResponse | undefined> => {
-  const res = await client.get(`/api/pickup-request/${pickupRequestId}`);
-  if (res.status === 200) return res.data;
-  throw new Error(`Unexpected response status: ${res.status}`);
+  console.log(`/api/pickup-request/${pickupRequestId}`);
+  try {
+    const res = await client.get(`/api/pickup-request/${pickupRequestId}`);
+    if (res.status === 200) return res.data;
+  } catch (err) {
+    logError(err);
+    return undefined;
+  }
 };
 
 export const getPickupRequest = resilient(_getPickupRequest, {
@@ -51,8 +58,14 @@ export const getPickupRequest = resilient(_getPickupRequest, {
 const _getPickupRequestsByCompany = async (
   companyId: string
 ): Promise<Array<BulkPickUpResponse> | undefined> => {
-  const res = await client.get(`/api/pickup-request/company/${companyId}`);
-  return res.data;
+  console.log(`/api/pickup-request/company/${companyId}`);
+  try {
+    const res = await client.get(`/api/pickup-request/company/${companyId}`);
+    return res.data;
+  } catch (err) {
+    logError(err);
+    return undefined;
+  }
 };
 
 export const getPickupRequestsByCompany = resilient(
