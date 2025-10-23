@@ -12,16 +12,13 @@ const CUSTOMER_LOGISTICS_BASE_URL = process.env.CUSTOMER_LOGISTICS_BASE_URL;
 
 const client = createHttpClient(CUSTOMER_LOGISTICS_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
@@ -29,8 +26,14 @@ export const createPickup = resilient(
   async (
     pickUp: CustomersPickUpRequest
   ): Promise<CustomersPickUpResponse | undefined> => {
+  console.log("/api/pickups", pickUp);
+  try {
     const res = await client.post("/api/pickups", pickUp);
     return res.data;
+  } catch (err) {
+    logError(err);
+    return undefined;
+  }
   },
   { fallback: async (pickUp: CustomersPickUpRequest) => undefined }
 );
@@ -39,10 +42,16 @@ export const listPickups = resilient(
   async (
     status: string
   ): Promise<Array<CustomersAllPickUpResponse> | undefined> => {
-    const res = await client.get("/api/pickups", {
-      params: status ? { status } : undefined,
-    });
-    return res.data;
+    console.log(`/api/pickups`);
+    try {
+      const res = await client.get("/api/pickups", {
+        params: status ? { status } : undefined,
+      });
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
   },
   { fallback: async (status: string) => [] }
 );
@@ -51,16 +60,28 @@ export const createCompany = resilient(
   async (
     company_name: string
   ): Promise<CustomersCompanyResponse | undefined> => {
-    const res = await client.post("/api/companies", { company_name });
-    return res.data;
+    console.log("/api/companies", { company_name });
+    try {
+      const res = await client.post("/api/companies", { company_name });
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
   },
   { fallback: async (company_name: string) => undefined }
 );
 
 export const listCompanies = resilient(
   async (): Promise<Array<CustomersCompanyResponse> | undefined> => {
-    const res = await client.get("/api/companies");
-    return res.data;
+    console.log(`/api/companies`);
+    try {
+      const res = await client.get("/api/companies");
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
   },
   { fallback: async () => [] }
 );

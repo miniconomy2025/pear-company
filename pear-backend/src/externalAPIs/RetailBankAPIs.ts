@@ -10,16 +10,13 @@ const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL;
 
 const client = createHttpClient(RETAIL_BANK_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
@@ -27,11 +24,17 @@ export const createRetailTransaction = resilient(
   async (
     payload: RetailBankTransationRequest
   ): Promise<RetailBankTransationResponse | undefined> => {
-    const res = await client.post("/transaction", payload);
-    if (res.status === 200) {
-      return res.data;
+    console.log("/transaction", payload);
+    try {
+      const res = await client.post("/transaction", payload);
+      if (res.status === 200) {
+        return res.data;
+      }
+      return undefined;
+    } catch (err) {
+      logError(err);
+      return undefined;
     }
-    return undefined;
   },
   {
     fallback: async (_payload: RetailBankTransationRequest) => undefined,
