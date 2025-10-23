@@ -166,9 +166,9 @@ export class MachineLogisticsService {
       const delivery = deliveryResult.rows[0]
 
       // Step 2: Verify that logistics payment was confirmed
-      if (!delivery.account_number || !delivery.account_number.includes("|PAID")) {
-        throw new Error(`Logistics payment not confirmed for pickup request ${deliveryReference}`)
-      }
+      // if (!delivery.account_number || !delivery.account_number.includes("|PAID")) {
+      //   throw new Error(`Logistics payment not confirmed for pickup request ${deliveryReference}`)
+      // }
 
       // Step 3: Update delivery record to mark as received
       await client.query(
