@@ -131,7 +131,7 @@ describe("PartsInventoryService", () => {
       to_account_number: "BL-ACC-123",
       to_bank_name: "commercial-bank",
       amount: 2500,
-      description: "Payment for Order #PAY-42 for PU-999",
+      description: "PU-999",
     });
 
     // Check we inserted with computed delivery reference and status id
@@ -181,7 +181,7 @@ describe("PartsInventoryService", () => {
       to_account_number: "VEND-ACC-1",
       to_bank_name: "commercial-bank",
       amount: 1200,
-      description: "Payment for Order #SCR-001 for Screens",
+      description: "SCR-001",
     });
 
     // Check INSERT args order (matches service implementation)
