@@ -36,7 +36,7 @@ export class SimulationService {
   async startSimulation(thohRequest: thohRequest): Promise<SimulationResponse> {
   
     try {
-      await this.cleanSimulationData();
+      // await this.cleanSimulationData();
 
       if (!thohRequest || !thohRequest.epochStartTime) {
         throw new Error("Did not receive a valid epoch start time from Simulation API.")

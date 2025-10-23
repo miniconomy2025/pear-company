@@ -28,6 +28,7 @@ export class PartsInventoryService {
 
   async checkAndOrderLowStock(simulatedDate: Date): Promise<void> {
     const levels = await this.getPartLevels();
+    console.log('checkAndOrderLowStock', levels);
 
     for (const part of ["Screens", "Cases", "Electronics"]) {
       const currentLevel = levels[part] || 0;
@@ -89,6 +90,7 @@ export class PartsInventoryService {
 
   private async orderPart(part: string, quantity: number, simulatedDate: Date): Promise<void> {
     try {
+      console.log('orderPart', part, quantity, simulatedDate);
       const client = await pool.connect();
       const simTime = simulatedDate.toISOString();
 
@@ -136,11 +138,16 @@ export class PartsInventoryService {
         default:
           throw new Error(`Unknown part: ${part}`);
       }
+      console.log('stock to order', order);
 
       if (!order) {
         return;
       }
-      await createTransaction(order);
+      const paymentResponse = await createTransaction(order);
+
+      if (!paymentResponse) {
+        throw new Error("Payment failed")
+      }
 
       const partRes = await client.query<{ part_id: number }>(
         `SELECT part_id FROM parts WHERE name = $1`,
