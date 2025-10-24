@@ -1,63 +1,92 @@
 import axios from "axios";
-import type { CustomersPickUpRequest, CustomersPickUpResponse, CustomersAllPickUpResponse, CustomersCompanyResponse } from "../types/extenalApis.js";
-import { httpsAgent } from "../config/httpClient.js";
+import type {
+  CustomersPickUpRequest,
+  CustomersPickUpResponse,
+  CustomersAllPickUpResponse,
+  CustomersCompanyResponse,
+} from "../types/extenalApis.js";
+import { createHttpClient } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const CUSTOMER_LOGISTICS_BASE_URL = process.env.CUSTOMER_LOGISTICS_BASE_URL
+const CUSTOMER_LOGISTICS_BASE_URL = process.env.CUSTOMER_LOGISTICS_BASE_URL;
 
-const client = axios.create({
-  baseURL: CUSTOMER_LOGISTICS_BASE_URL,
-  timeout: 5000,
-  headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
-});
+const client = createHttpClient(CUSTOMER_LOGISTICS_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
-export async function createPickup(pickUp: CustomersPickUpRequest): Promise<CustomersPickUpResponse | undefined> {
+export const createPickup = resilient(
+  async (
+    pickUp: CustomersPickUpRequest
+  ): Promise<CustomersPickUpResponse | undefined> => {
+  console.log("/api/pickups");
+  console.log(pickUp)
   try {
-    const res = await client.post("/pickup", pickUp);
+    const res = await client.post("/api/pickups", pickUp);
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
-    handleError(err);
+    logError(err);
+    return undefined;
   }
-}
+  },
+  { fallback: async (pickUp: CustomersPickUpRequest) => undefined }
+);
 
-export async function listPickups(status: string): Promise<Array<CustomersAllPickUpResponse> | undefined> {
-  try {
-    const res = await client.get("/pickup", {
-      params: status ? { status } : undefined,
-    });
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const listPickups = resilient(
+  async (
+    status: string
+  ): Promise<Array<CustomersAllPickUpResponse> | undefined> => {
+    console.log(`/api/pickups`, status);
+    try {
+      const res = await client.get("/api/pickups", {
+        params: status ? { status } : undefined,
+      });
+      console.log('Response:', res.data);
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
+  },
+  { fallback: async (status: string) => [] }
+);
 
-export async function createCompany(company_name: string): Promise<CustomersCompanyResponse | undefined> {
-  try {
-    const res = await client.post("/companies", { company_name });
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const createCompany = resilient(
+  async (
+    company_name: string
+  ): Promise<CustomersCompanyResponse | undefined> => {
+    console.log("/api/companies", { company_name });
+    try {
+      const res = await client.post("/api/companies", { company_name });
+      console.log('Response:', res.data);
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
+  },
+  { fallback: async (company_name: string) => undefined }
+);
 
-export async function listCompanies(): Promise<Array<CustomersCompanyResponse> | undefined> {
-  try {
-    const res = await client.get("/companies");
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const listCompanies = resilient(
+  async (): Promise<Array<CustomersCompanyResponse> | undefined> => {
+    console.log(`/api/companies`);
+    try {
+      const res = await client.get("/api/companies");
+      console.log('Response:', res.data);
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
+  },
+  { fallback: async () => [] }
+);

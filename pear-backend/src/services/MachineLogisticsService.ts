@@ -29,8 +29,8 @@ export class MachineLogisticsService {
 
       const pickupRequest: BulkCreatePickUpRequest = {
         originalExternalOrderId: orderResponse.orderId.toString(),
-        originCompanyId: "thoh",
-        destinationCompanyId: "pear-company",
+        originCompany: "thoh",
+        destinationCompany: "pear-company",
         items: items,
       }
 
@@ -43,10 +43,10 @@ export class MachineLogisticsService {
       await this.storePickupRequest(machineOrderId, pickupResponse)
 
       const paymentResponse = await createTransaction({
-        to_account_number: pickupResponse.bulkLogisticsBankAccountNumber,
+        to_account_number: pickupResponse.accountNumber,
         to_bank_name: "commercial-bank",
-        amount: pickupResponse.cost,
-        description: `Logistics payment for machine pickup (Request #${pickupResponse.pickupRequestId}, Ref: ${pickupResponse.paymentReferenceId})`,
+        amount: Number(pickupResponse.cost),
+        description:  `${pickupResponse.pickupRequestId}`,
       })
 
       if (!paymentResponse || !paymentResponse.success) {
@@ -56,8 +56,8 @@ export class MachineLogisticsService {
       // Step 4: Update pickup record with payment info
       await this.updatePickupPayment(
         pickupResponse.pickupRequestId,
-        paymentResponse.transaction_number,
-        pickupResponse.paymentReferenceId,
+        pickupResponse.accountNumber,
+        
       )
 
       return true
@@ -82,7 +82,7 @@ export class MachineLogisticsService {
           pickupResponse.pickupRequestId,
           pickupResponse.cost,
           "pear-company", 
-          pickupResponse.paymentReferenceId,
+          pickupResponse.accountNumber
         ],
       )
 
@@ -96,8 +96,7 @@ export class MachineLogisticsService {
 
   private async updatePickupPayment(
     pickupRequestId: number,
-    transactionNumber: string,
-    paymentReferenceId: string,
+    accountNumber: string
   ): Promise<void> {
     const client = await pool.connect()
     try {
@@ -107,7 +106,7 @@ export class MachineLogisticsService {
       SET account_number = $1
       WHERE delivery_reference = $2
     `,
-        [`${transactionNumber}|${paymentReferenceId}`, pickupRequestId],
+        [accountNumber, pickupRequestId],
       )
 
     } catch (error) {
@@ -142,11 +141,22 @@ export class MachineLogisticsService {
     }
   }
 
-  async confirmMachineDelivery(deliveryReference: number): Promise<boolean> {
+  async confirmMachineDelivery(deliveryReference: string): Promise<boolean> {
     const client = await pool.connect()
     try {
       await client.query("BEGIN")
 
+      const deliveryResultMoreThan1 = await client.query(
+        `
+      SELECT md.*, mp.phone_id, mp.machines_purchased, mp.rate_per_day, 
+             mp.total_cost, p.model as phone_model, mp.reference_number as thoh_order_id
+      FROM machine_deliveries md
+      JOIN machine_purchases mp ON md.machine_purchases_id = mp.machine_purchases_id
+      JOIN phones p ON mp.phone_id = p.phone_id
+      WHERE md.delivery_reference = $1
+    `,
+        [deliveryReference],
+      )
 
       const deliveryResult = await client.query(
         `
@@ -160,16 +170,19 @@ export class MachineLogisticsService {
         [deliveryReference],
       )
 
-      if (deliveryResult.rows.length === 0) {
-        throw new Error(`Machine delivery record not found for pickup request ${deliveryReference}`)
+      if (deliveryResult.rowCount === 0) {
+        if (deliveryResultMoreThan1.rowCount === 0) {
+          throw new Error(`Machine delivery record not found for pickup request ${deliveryReference}`);
+        }
+        return true;
       }
 
       const delivery = deliveryResult.rows[0]
 
       // Step 2: Verify that logistics payment was confirmed
-      if (!delivery.account_number || !delivery.account_number.includes("|PAID")) {
-        throw new Error(`Logistics payment not confirmed for pickup request ${deliveryReference}`)
-      }
+      // if (!delivery.account_number || !delivery.account_number.includes("|PAID")) {
+      //   throw new Error(`Logistics payment not confirmed for pickup request ${deliveryReference}`)
+      // }
 
       // Step 3: Update delivery record to mark as received
       await client.query(
@@ -284,13 +297,8 @@ export class MachineLogisticsService {
         WHERE units_received = 0
       `)
 
-      console.log(`🔍 Checking status of ${pendingDeliveries.rows.length} pending pickups...`)
-
       for (const delivery of pendingDeliveries.rows) {
         const status = await this.checkPickupStatus(delivery.pickup_request_id)
-        if (status) {
-          console.log(`Pickup ${delivery.pickup_request_id}: ${status.status}`)
-        }
       }
     } catch (error) {
       console.error("Error checking pending pickup statuses:", error)

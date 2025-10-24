@@ -1,40 +1,44 @@
 import axios from "axios";
-import type { RetailBankTransationRequest, RetailBankTransationResponse} from "../types/extenalApis.js";
-import { httpsAgent } from "../config/httpClient.js";
+import type {
+  RetailBankTransationRequest,
+  RetailBankTransationResponse,
+} from "../types/extenalApis.js";
+import { createHttpClient } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL
+const RETAIL_BANK_BASE_URL = process.env.RETAIL_BANK_BASE_URL;
 
-const client = axios.create({
-  baseURL: RETAIL_BANK_BASE_URL,
-  timeout: 5000,
-  headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
-});
+const client = createHttpClient(RETAIL_BANK_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
-export async function createRetailTransaction(payload: RetailBankTransationRequest): Promise<RetailBankTransationResponse | undefined> {
-  try {
-    const res = await client.post("/transaction", payload);
-    if (res.status === 200) {
+export const createRetailTransaction = resilient(
+  async (
+    payload: RetailBankTransationRequest
+  ): Promise<RetailBankTransationResponse | undefined> => {
+    console.log("/transaction");
+    console.log(payload);
+    try {
+      const res = await client.post("/transaction", payload);
+      console.log('Response:', res.data);
+      if (res.status === 200) {
         return res.data;
+      }
+      return undefined;
+    } catch (err) {
+      logError(err);
+      return undefined;
     }
-    else {
-        return;
-    }
-  } catch (err) {
-    handleError(err);
+  },
+  {
+    fallback: async (_payload: RetailBankTransationRequest) => undefined,
   }
-}
-
+);

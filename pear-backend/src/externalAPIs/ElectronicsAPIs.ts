@@ -1,52 +1,69 @@
-import axios from 'axios';
-import type { ElectronicsPriceResponse, ElectronicsCreateOrderResponse, ElectronicsGetOrderResponse } from "../types/extenalApis.js";
-import { httpsAgent } from '../config/httpClient.js';
+import axios from "axios";
+import type {
+  ElectronicsPriceResponse,
+  ElectronicsCreateOrderResponse,
+  ElectronicsGetOrderResponse,
+} from "../types/extenalApis.js";
+import { createHttpClient } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const ELECTRONICS_BASE_URL = process.env.ELECTRONICS_BASE_URL
+const ELECTRONICS_BASE_URL = process.env.ELECTRONICS_BASE_URL;
 
-const client = axios.create({
-  baseURL: ELECTRONICS_BASE_URL,
-  timeout: 5000,
-  headers: { 'Content-Type': 'application/json' },
-  httpsAgent : httpsAgent,
-});
+const client = createHttpClient(ELECTRONICS_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
-    console.error('API error:', err.response?.data ?? err.message);
-    throw err;
+    console.error("API error:", err.response?.data ?? err.message);
   } else if (err instanceof Error) {
-    console.error('Error:', err.message);
-    throw err;
+    console.error("Error:", err.message);
   } else {
-    console.error('Unknown error:', err);
-    throw new Error(String(err));
+    console.error("Unknown error:", err);
   }
 }
 
-export async function getElectronics(): Promise<ElectronicsPriceResponse | undefined> {
-  try {
-    const res = await client.get('/electronics');
-    return res?.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const getElectronics = resilient(
+  async (): Promise<ElectronicsPriceResponse | undefined> => {
+    console.log("/electronics");
+    try {
+      const res = await client.get("/electronics");
+      console.log('Response:', res.data);
+      return res?.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
+  },
+  { fallback: async () => undefined }
+);
 
-export async function createElectronicsOrder(quantity: number): Promise<ElectronicsCreateOrderResponse | undefined> {
-  try {
-    const res = await client.post('/orders', { quantity });
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const createElectronicsOrder = resilient(
+  async (
+    quantity: number
+  ): Promise<ElectronicsCreateOrderResponse | undefined> => {
+    console.log("/orders", { quantity });
+    try {
+      const res = await client.post("/orders", { quantity });
+      console.log('Response:', res.data);
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
+  },
+  { fallback: async (quantity: number) => undefined }
+);
 
-export async function getOrder(orderId: number): Promise<ElectronicsGetOrderResponse | undefined> {
-  try {
-    const res = await client.get(`/orders/${orderId}`);
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+export const getOrder = resilient(
+  async (orderId: number): Promise<ElectronicsGetOrderResponse | undefined> => {
+    console.log(`/orders/${orderId}`);
+    try {
+      const res = await client.get(`/orders/${orderId}`);
+      console.log('Response:', res.data);
+      return res.data;
+    } catch (err) {
+      logError(err);
+      return undefined;
+    }
+  },
+  { fallback: async (orderId: number) => undefined }
+);

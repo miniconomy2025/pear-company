@@ -21,8 +21,8 @@ export interface ElectronicsGetOrderResponse {
 
 export interface ScreensPriceResponse {
   screens: {
-    availableStock: number,
-    pricePerUnit: number,
+    quantity: number,
+    price: number,
   }
 }
 
@@ -30,7 +30,6 @@ export interface ScreensCreateOrderResponse {
   orderId: number,
   totalPrice: number,
   bankAccountNumber: string,
-  orderStatusLink: string,
 }
 
 export interface ScreensGetOrderResponse {
@@ -39,7 +38,6 @@ export interface ScreensGetOrderResponse {
   unitPrice: number,
   totalPrice: number,
   status: string,
-  orderDate: string,
   amountPaid: number,
   remainingBalance: number,
   isFullyPaid: boolean
@@ -65,6 +63,7 @@ export interface CasesGetOrderResponse {
   ordered_at: string,
   quantity: number,
   status: string,
+  total_price: number
 }
 
 export interface CustomersPickUpRequest {
@@ -99,8 +98,8 @@ export interface BulkItemRequest {
 
 export interface BulkCreatePickUpRequest {
   originalExternalOrderId: string,
-  originCompanyId: string,
-  destinationCompanyId: string,
+  originCompany: string,
+  destinationCompany: string,
   items: BulkItemRequest[]
 }
 
@@ -108,7 +107,7 @@ export interface BulkCreatePickUpResponse {
   pickupRequestId: number,
   cost: number,
   paymentReferenceId: string,
-  bulkLogisticsBankAccountNumber: string,
+  accountNumber: string,
   status: string,
   statusCheckUrl: string
 }
@@ -124,8 +123,9 @@ export interface BulkPickUpResponse {
 }
 
 export interface SimulationTimeResponse {
-  date: string,
-  time: string,
+  simulationDate: string,
+  simulationTime: string,
+  simulationDay: number
 }
 
 export interface SimulationBuyMachineResponse {
@@ -155,6 +155,7 @@ export interface SimulationOrderPaymentResponse {
   status: string
   message: string
   canFulfill: boolean
+  availableQuantity: number
 }
 export interface MachineItem {
   machineName: string,
@@ -164,17 +165,21 @@ export interface MachineItem {
 }
 
 export interface SimulationMachineResponse {
-  machines: [MachineItem]
+  machines: MachineItem[]
 }
 
 export interface LoanItems {
   loan_number: string,
-  due: number
+  initial_amount: number
+  interest_rate: number
+  write_off: boolean
+  outstanding_amount: number
 }
 
 export interface CommercialBankLoansResponse {
-  total_due: number,
-  loans: [LoanItems]
+  success: boolean,
+  total_outstanding_amount: number,
+  loans: LoanItems[]
 }
 
 export interface CommercialBankTransationRequest {
@@ -200,18 +205,28 @@ export interface CommercialBankTransationItemResponse {
   timestamp: number
 }
 
+export interface CommercialGetBankTransationItemResponse {
+  success: boolean,
+  transaction_number: CommercialBankTransationItemResponse
+}
+
 export interface CommercialBankTakeLoanResponse {
   success: boolean,
   loan_number: string
 }
 
-export interface CommercialBankLoanListResponse {
+export interface CommercialBankLoanListItemResponse {
   loan_number: string,
   initial_amount: number,
   interest_rate: number,
-  started_at: number,
   write_off: boolean,
   outstanding_amount: number
+}
+
+export interface CommercialBankLoanListResponse {
+  success: boolean,
+  total_outstanding_amount: number,
+  loans: CommercialBankLoanListItemResponse[]
 }
 
 export interface CommercialBankLoanPayResponse {
@@ -226,13 +241,15 @@ export interface LoanPayments {
 }
 
 export interface CommercialBankLoanDetailsResponse {
-  loan_number: string,
-  initial_amount: number,
-  outstanding: number,
-  interest_rate: number,
-  started_at: number,
-  write_off: boolean,
-  payments: [LoanPayments]
+  success: boolean,
+  loan: {
+    loan_number: string,
+    initial_amount: number,
+    outstanding_amount: number,
+    interest_rate: number,
+    write_off: boolean,
+    payments: LoanPayments[]
+  }
 }
 
 export interface CommercialBankAccountResponse {
@@ -248,4 +265,11 @@ export interface RetailBankTransationRequest {
 
 export interface RetailBankTransationResponse {
   transferId: string
+}
+
+export interface ReceivePhoneRequest {
+  accountNumber: string;
+  phoneName: string;
+  id?: string;
+  description?: string;
 }

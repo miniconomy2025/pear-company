@@ -17,7 +17,7 @@ export class OrderService {
     }
 
     for (const item of orderRequest.items) {
-      if (!item.phoneName || !item.quantity || item.quantity <= 0) {
+      if (!item.model || !item.quantity || item.quantity <= 0) {
         throw new Error("Invalid item: phoneName and positive quantity required")
       }
     }
@@ -35,25 +35,25 @@ export class OrderService {
       const reservedStatusId = statusRes.rows[0].status_id;
 
       let totalPrice = 0;
-      for (const { phoneName, quantity } of orderRequest.items) {
+      for (const { model, quantity } of orderRequest.items) {
 
-        const result = await pool.query<{ phone_id: number, price: string }>(
+        const result = await client.query<{ phone_id: number, price: string }>(
           `SELECT phone_id, 
             price::text 
             FROM phones
             WHERE model = $1
           `,
-          [phoneName]
+          [model]
         );
         if (result.rowCount === 0) {
-          throw new Error(`Phone not found for phone name=${phoneName}`);
+          throw new Error(`Phone not found for phone name=${model}`);
         }
         const phone_id = result.rows[0].phone_id;
 
         const isAvailable = await stockService.checkAvailability(phone_id, quantity);
         if (!isAvailable) {
           throw new Error(
-            `Not enough stock for phone ${phoneName}: requested ${quantity}.`
+            `Not enough stock for phone ${model}: requested ${quantity}.`
           );
         }
 
@@ -71,13 +71,13 @@ export class OrderService {
       );
       const orderId = orderRes.rows[0].order_id;
 
-      for (const { phoneName, quantity } of orderRequest.items) {
-        const result = await pool.query<{ phone_id: number }>(
+      for (const { model, quantity } of orderRequest.items) {
+        const result = await client.query<{ phone_id: number }>(
           `SELECT phone_id
             FROM phones
             WHERE model = $1
           `,
-          [phoneName]
+          [model]
         );
         
         await client.query(
@@ -99,9 +99,9 @@ export class OrderService {
         throw new Error(`Payment for phone failed`);
       }
 
-      await this.deliverGoods(orderId);
-
       await client.query("COMMIT");
+
+      await this.deliverGoods(orderId);
       return { order_id: orderId, price: totalPrice, accountNumber: yourAccountNumber  };
     } catch (err) {
       await client.query("ROLLBACK");
@@ -116,7 +116,7 @@ export class OrderService {
     try {
       await client.query("BEGIN");
 
-      const quantityRes = await pool.query<{ total: number }>(
+      const quantityRes = await client.query<{ total: number }>(
         `
         SELECT COALESCE(SUM(quantity), 0) AS total
           FROM order_items
@@ -125,7 +125,7 @@ export class OrderService {
         [orderId]
       );
 
-      const result = await pool.query<{ model: string }>(
+      const result = await client.query<{ model: string }>(
         `
           SELECT p.model
             FROM order_items oi
@@ -137,9 +137,9 @@ export class OrderService {
       );
 
       const pickupRes = await createPickup({
-        companyName: "pear-company",
+        companyName: "pear",
         quantity: quantityRes.rows[0].total,
-        recipient: `stock order #${orderId}`,
+        recipient: "THoH",
         modelName: result.rows[0].model,
       });
       if (!pickupRes) {
@@ -172,15 +172,12 @@ export class OrderService {
         ]
       );
 
-      console.log(`Created consumer_delivery with reference ${pickupRes}`);
-
       await createTransaction({
         to_account_number: pickupRes.accountNumber,
         to_bank_name: "commercial-bank",
-        amount: pickupRes?.amount || 0,
-        description: `Payment for delivery #${ pickupRes?.refernceno}`
+        amount: Number(pickupRes?.amount) || 0,
+        description: `${pickupRes?.refernceno}`
       });
-      console.log(`Payment for delivery #${ pickupRes?.refernceno}`);
 
       await client.query("COMMIT");
     } catch (err) {
@@ -329,9 +326,6 @@ export class OrderService {
 
       for (const { order_id } of res.rows) {
         const cancelled = await this.cancelOrder(order_id);
-        if (cancelled) {
-          console.log(`Expired order ${order_id} cancelled and stock released`);
-        }
       }
     } finally {
       client.release();

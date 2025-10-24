@@ -1,52 +1,71 @@
 import axios from "axios";
-import type { CasesPriceResponse, CasesCreateOrderResponse, CasesGetOrderResponse } from "../types/extenalApis.js";
-import { httpsAgent } from "../config/httpClient.js";
+import type {
+  CasesPriceResponse,
+  CasesCreateOrderResponse,
+  CasesGetOrderResponse,
+} from "../types/extenalApis.js";
+import { createHttpClient } from "../config/httpClient.js";
+import { resilient } from "../utils/resilience.js";
 
-const CASE_BASE_URL = process.env.CASE_BASE_URL
+const CASE_BASE_URL = process.env.CASE_BASE_URL;
 
-const client = axios.create({
-  baseURL: CASE_BASE_URL,
-  timeout: 5000,
-  headers: { "Content-Type": "application/json" },
-  httpsAgent : httpsAgent,
-});
+const client = createHttpClient(CASE_BASE_URL);
 
-function handleError(err: unknown) {
+function logError(err: unknown) {
   if (axios.isAxiosError(err)) {
     console.error("API error:", err.response?.data ?? err.message);
-    throw err;
   } else if (err instanceof Error) {
     console.error("Error:", err.message);
-    throw err;
   } else {
     console.error("Unknown error:", err);
-    throw new Error(String(err));
   }
 }
 
-export async function getCases(): Promise<CasesPriceResponse | undefined> {
+const _getCases = async (): Promise<CasesPriceResponse | undefined> => {
+  console.log(`/api/cases`);
   try {
-    const res = await client.get("/cases");
+    const res = await client.get("/api/cases");
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
-    handleError(err);
+    logError(err);
+    return undefined;
   }
-}
+};
+export const getCases = resilient(_getCases, {
+  fallback: async () => undefined,
+});
 
-export async function createCaseOrder(quantity: number): Promise<CasesCreateOrderResponse | undefined> {
+const _createCaseOrder = async (
+  quantity: number
+): Promise<CasesCreateOrderResponse | undefined> => {
+  console.log(`/api/orders`, quantity);
   try {
-    const res = await client.post("/orders", { quantity });
+    const res = await client.post("/api/orders", { quantity });
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
-    handleError(err);
+    logError(err);
+    return undefined;
   }
-}
+};
+export const createCaseOrder = resilient(_createCaseOrder, {
+  fallback: async (_quantity: number) => undefined,
+});
 
-export async function getOrder(id: number): Promise<CasesGetOrderResponse | undefined> {
+const _getOrder = async (
+  id: number
+): Promise<CasesGetOrderResponse | undefined> => {
+  console.log(`/api/orders`, id);
   try {
-    const res = await client.get(`/orders/${id}`);
+    const res = await client.get(`/api/orders/${id}`);
+    console.log('Response:', res.data);
     return res.data;
   } catch (err) {
-    handleError(err);
+    logError(err);
+    return undefined;
   }
-}
+};
+export const getOrder = resilient(_getOrder, {
+  fallback: async (_id: number) => undefined,
+});

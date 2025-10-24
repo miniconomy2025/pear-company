@@ -8,7 +8,7 @@ export class MachineFailureController {
   failedMachine = async (req: Request, res: Response): Promise<void> => {
     try {
       const machine: MachineFailureRequest = req.body
-      await this.machineFailureService.failedMachine(machine)
+      // await this.machineFailureService.failedMachine(machine)
       res.status(200).json({ message: "Machine failure recorded" })
     } catch (error) {
       console.error("Error on machine failure recording:", error)

@@ -6,9 +6,9 @@ import { createTransaction } from "../externalAPIs/CommercialBankAPIs.js";
 import { createPickupRequest } from "../externalAPIs/BulkLogisticsAPIs.js";
 
 const THRESHOLDS: { [key: string]: number } = {
-  screens: 500,
-  cases: 500,
-  electronics: 500,
+  Screens: 5000,
+  Cases: 5000,
+  Electronics: 5000,
 };
 
 export class PartsInventoryService {
@@ -17,7 +17,7 @@ export class PartsInventoryService {
       `SELECT p.name, i.quantity_available
        FROM inventory i
        JOIN parts p ON p.part_id = i.part_id
-       WHERE p.name IN ('screens', 'cases', 'electronics')`
+       WHERE p.name IN ('Screens', 'Cases', 'Electronics')`
     );
     const levels: Record<string, number> = {};
     res.rows.forEach((row) => {
@@ -28,41 +28,48 @@ export class PartsInventoryService {
 
   async checkAndOrderLowStock(simulatedDate: Date): Promise<void> {
     const levels = await this.getPartLevels();
+    console.log('checkAndOrderLowStock', levels);
 
-    for (const part of ["screens", "cases", "electronics"]) {
-      const currentLevel = levels[part] || 0;
-      if (currentLevel < THRESHOLDS[part]) {
-        const amountToOrder = THRESHOLDS[part] - currentLevel;
-        console.log(`Stock low for ${part}: ${currentLevel}. Ordering ${amountToOrder}.`);
-        await this.orderPart(part, amountToOrder, simulatedDate);
-      } else {
-        console.log(`${part} stock sufficient: ${currentLevel}`);
+    for (const part of ["Screens", "Cases", "Electronics"]) {
+      let currentLevel = levels[part];
+      let threshold = THRESHOLDS[part];
+
+      if (!currentLevel) {
+        currentLevel = 0
       }
+      if (!threshold) {
+        threshold = 500
+      }
+
+      console.log('currentLevel threshold', currentLevel, levels[part], threshold, THRESHOLDS[part]);
+
+      // if (currentLevel < threshold) {
+      if (currentLevel > 1000 || currentLevel < threshold) {
+        // let amountToOrder = threshold - currentLevel;
+        let amountToOrder = 1000;
+        await this.orderPart(part, amountToOrder, simulatedDate);
+      } 
     }
   }
 
-  async requestBulkDelivery(partsPurchaseId: number, address: string, quantity: number): Promise<void> {
+  async requestBulkDelivery(partsPurchaseId: number, address: string, quantity: number, id: number): Promise<void> {
     try {
         const client = await pool.connect();
         const pickupRes = await createPickupRequest({
-        originalExternalOrderId: partsPurchaseId.toString(),
-        originCompanyId: `${address}-supplier`,
-        destinationCompanyId: "pear-company",
+        originalExternalOrderId: id.toString(),
+        originCompany: `${address}-supplier`,
+        destinationCompany: "pear-company",
         items: [{
             itemName: address,
             quantity: quantity
           }]
         });
-        console.log(`External pickup created:`, pickupRes);
-
-        if (!pickupRes?.bulkLogisticsBankAccountNumber || !pickupRes?.cost || !pickupRes?.paymentReferenceId || !pickupRes?.pickupRequestId) {
+        
+        if (!pickupRes?.accountNumber || !pickupRes?.cost || !pickupRes?.paymentReferenceId || !pickupRes?.pickupRequestId) {
           return;
         }
 
-        const refRes = await client.query<{ nextval: number }>(
-        `SELECT nextval('bulk_deliveries_bulk_delivery_id_seq') AS nextval`
-        );
-        const deliveryReference = refRes.rows[0].nextval;
+        const deliveryReference = pickupRes.pickupRequestId;
 
         const statusRes = await client.query<{ status_id: number }>(
         `SELECT status_id FROM status WHERE description = 'Pending'`
@@ -76,17 +83,17 @@ export class PartsInventoryService {
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING bulk_delivery_id
         `,
-        [partsPurchaseId, deliveryReference, pickupRes.cost, statusId, `${address}-supplier`, pickupRes.bulkLogisticsBankAccountNumber]
+        [partsPurchaseId, deliveryReference, pickupRes.cost, statusId, `${address}-supplier`, pickupRes.accountNumber]
         );
         const bulkDeliveryId = rows[0].bulk_delivery_id;
-        console.log(`Inserted bulk_delivery_id=${bulkDeliveryId}`);
 
         await createTransaction({
-          to_account_number: pickupRes.bulkLogisticsBankAccountNumber,
+          to_account_number: pickupRes.accountNumber,
           to_bank_name: "commercial-bank",
-          amount: pickupRes.cost,
-          description: `Payment for Order #${pickupRes.paymentReferenceId} for ${pickupRes.pickupRequestId}`
+          amount: Number(pickupRes.cost),
+          description: `${pickupRes.pickupRequestId}`
         });
+        client.release()
     } catch (err) {
       console.error(`Failed to order ${address}:`, err);
     }
@@ -94,58 +101,68 @@ export class PartsInventoryService {
 
   private async orderPart(part: string, quantity: number, simulatedDate: Date): Promise<void> {
     try {
+      console.log('orderPart', part, quantity, simulatedDate);
       const client = await pool.connect();
       const simTime = simulatedDate.toISOString();
 
       let order;
+      let refNum;
       switch (part) {
-        case "screens": {
+        case "Screens": {
           const res = await createScreenOrder(quantity);
           
           if (!!res?.bankAccountNumber && !!res?.totalPrice && !!res?.orderId) {
             order = {
               to_account_number: res.bankAccountNumber,
               to_bank_name: "commercial-bank",
-              amount: res.totalPrice,
-              description: `Payment for Order #${res.orderId} for ${part}`
+              amount: Number(res.totalPrice),
+              description: `${res.orderId}`
             };
+            refNum = res.orderId;
           }
           break;
         }
-        case "cases": {
+        case "Cases": {
           const res = await createCaseOrder(quantity);
 
           if (!!res?.total_price && !!res?.id) {
             order = {
               to_account_number: res.account_number,
               to_bank_name: "commercial-bank",
-              amount: res.total_price,
-              description: `Payment for Order #${res.id} for ${part}`
+              amount: Number(res.total_price),
+              description: `${res.id}`
             };
+            refNum = res.id;
           }
           break;
         }
-        case "electronics": {
+        case "Electronics": {
           const res = await createElectronicsOrder(quantity);
           
           if (!!res?.bankNumber && !!res?.amountDue && !!res?.orderId) {
             order = {
               to_account_number: res.bankNumber,
               to_bank_name: "commercial-bank",
-              amount: res.amountDue,
-              description: `Payment for Order #${res.orderId} for ${part}`
+              amount: Number(res.amountDue),
+              description: `${res.orderId}`
             };
+            refNum = res.orderId;
           }
           break;
         }
         default:
           throw new Error(`Unknown part: ${part}`);
       }
+      console.log('stock to order', order);
 
-      if (!order) {
+      if (!order || !refNum) {
         return;
       }
-      await createTransaction(order);
+      const paymentResponse = await createTransaction(order);
+
+      if (!paymentResponse) {
+        throw new Error("Payment failed")
+      }
 
       const partRes = await client.query<{ part_id: number }>(
         `SELECT part_id FROM parts WHERE name = $1`,
@@ -153,10 +170,7 @@ export class PartsInventoryService {
       );
       const partId = partRes.rows[0].part_id;
       
-      const refRes = await client.query<{ nextval: number }>(
-        `SELECT nextval('parts_purchases_reference_number_seq') AS nextval`
-      );
-      const referenceNumber = refRes.rows[0].nextval;
+      const referenceNumber = refNum;
 
       const statusRes = await client.query<{ status_id: number }>(
         `SELECT status_id FROM status WHERE description = 'Pending'`
@@ -174,7 +188,8 @@ export class PartsInventoryService {
       );
       const partsPurchaseId = purchaseRes.rows[0].parts_purchase_id;
 
-      await this.requestBulkDelivery(partsPurchaseId, part, quantity);
+      await this.requestBulkDelivery(partsPurchaseId, part, quantity, refNum);
+      client.release()
     } catch (err) {
       console.error(`Failed to order ${part}:`, err);
     }

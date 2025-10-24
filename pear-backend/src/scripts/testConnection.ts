@@ -24,12 +24,12 @@ async function testDatabaseConnection() {
     ssl: false, // Disable SSL for local development
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000, // Increased timeout
+    connectionTimeoutMillis: 1000, // Increased timeout
   })
 
+  const client = await pool.connect()
   try {
     console.log("\n🔄 Attempting to connect...")
-    const client = await pool.connect()
 
     console.log("✅ Connection successful!")
 
@@ -66,7 +66,7 @@ async function testDatabaseConnection() {
       console.error("Error code:", (error as any).code)
     }
   } finally {
-    await pool.end()
+    client.release()
     process.exit(0)
   }
 }
