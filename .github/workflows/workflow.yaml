@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - main
-      - dev
+      # - dev
       # - pipeline-setup
 
 jobs:
@@ -88,7 +88,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y k6
 
-        - name: Run unit tests
+        - name: Run Unit and Integration tests
           run: cd pear-backend && npm install && npm test
 
         - name: Run K6 Load Test
