@@ -14,7 +14,7 @@ const CLIENT_ID = process.env.CLIENT_ID ?? "pear-company";
 export function createHttpClient(baseURL?: string): AxiosInstance {
   const client = axios.create({
     baseURL,
-    timeout: 90000,
+    timeout: 5000,
     headers: { "Content-Type": "application/json" },
     httpsAgent,
   });

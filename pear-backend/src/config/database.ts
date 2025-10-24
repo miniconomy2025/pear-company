@@ -24,8 +24,8 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || "password",
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   max: 20,
-  idleTimeoutMillis: 90000,
-  connectionTimeoutMillis: 90000, 
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000, 
   keepAlive: true,
 }
 
